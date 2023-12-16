@@ -1,1 +1,3 @@
-# Inzultz
+# inzultz
+
+A new Flutter project.
