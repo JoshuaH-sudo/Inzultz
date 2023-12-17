@@ -28,15 +28,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
     _formKey.currentState!.save();
 
-    if (_isVerifying) {
-      final credential = PhoneAuthProvider.credential(
-        verificationId: _verificationCode!,
-        smsCode: _smsCode,
-      );
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      return;
-    }
-
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: _enteredPhoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
@@ -54,8 +45,96 @@ class _AuthScreenState extends State<AuthScreen> {
     );
   }
 
+  _sendSMSCode() async {
+    final isValid = _formKey.currentState!.validate();
+    if (!isValid) {
+      return;
+    }
+
+    _formKey.currentState!.save();
+
+    final credential = PhoneAuthProvider.credential(
+      verificationId: _verificationCode!,
+      smsCode: _smsCode,
+    );
+    await FirebaseAuth.instance.signInWithCredential(credential);
+
+    setState(() {
+      _isVerifying = false;
+      _isLogin = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    var loginContent = [
+      IntlPhoneField(
+        decoration: const InputDecoration(
+          labelText: 'Phone Number',
+          border: OutlineInputBorder(
+            borderSide: BorderSide(),
+          ),
+        ),
+        initialCountryCode: 'AU',
+        onChanged: (phone) {
+          setState(() {
+            _enteredPhoneNumber = phone.completeNumber;
+          });
+        },
+      ),
+      const SizedBox(height: 12),
+      ElevatedButton(
+        onPressed: _onSubmit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        ),
+        child: Text(_isLogin ? "Login" : "Signup"),
+      ),
+      const SizedBox(height: 6),
+      TextButton(
+        onPressed: () {
+          setState(() {
+            _isLogin = !_isLogin;
+          });
+        },
+        child:
+            Text(_isLogin ? 'Create new account' : "I already have an account"),
+      ),
+    ];
+
+    var verifyingContent = [
+      TextFormField(
+        keyboardType: TextInputType.number,
+        decoration: const InputDecoration(
+          labelText: 'Verification Code',
+          border: OutlineInputBorder(
+            borderSide: BorderSide(),
+          ),
+        ),
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return 'Please enter a verification code';
+          }
+          return null;
+        },
+        onSaved: (value) {
+          setState(() {
+            _smsCode = value!;
+          });
+        },
+      ),
+      const SizedBox(height: 12),
+      ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        ),
+        onPressed: _sendSMSCode,
+        child: const Text("Verify"),
+      ),
+      const SizedBox(height: 6),
+      TextButton(onPressed: () {}, child: const Text("Resend code")),
+    ];
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
       body: Center(
@@ -73,67 +152,8 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (!_isVerifying)
-                            IntlPhoneField(
-                              decoration: const InputDecoration(
-                                labelText: 'Phone Number',
-                                border: OutlineInputBorder(
-                                  borderSide: BorderSide(),
-                                ),
-                              ),
-                              initialCountryCode: 'AU',
-                              onChanged: (phone) {
-                                setState(() {
-                                  _enteredPhoneNumber = phone.completeNumber;
-                                });
-                              },
-                            ),
-                          if (_isVerifying)
-                            TextFormField(
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Verification Code',
-                                border: OutlineInputBorder(
-                                  borderSide: BorderSide(),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value!.trim().isEmpty) {
-                                  return 'Please enter a verification code';
-                                }
-                                return null;
-                              },
-                              onSaved: (value) {
-                                setState(() {
-                                  _smsCode = value!;
-                                });
-                              },
-                            ),
-                          if (_isVerifying) const SizedBox(height: 6),
-                          if (_isVerifying)
-                            TextButton(
-                                onPressed: () {},
-                                child: const Text("Resend code")),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: _onSubmit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer,
-                            ),
-                            child: Text(_isLogin ? "Login" : "Signup"),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _isLogin = !_isLogin;
-                              });
-                            },
-                            child: Text(_isLogin
-                                ? 'Create new account'
-                                : "I already have an account"),
-                          ),
+                          if (_isLogin && !_isVerifying) ...loginContent,
+                          if (_isVerifying) ...verifyingContent,
                         ],
                       ),
                     ),

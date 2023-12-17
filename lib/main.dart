@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:inzultz/screens/auth.dart';
+import 'package:inzultz/screens/send.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -29,8 +30,7 @@ class MainApp extends StatelessWidget {
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            return const Placeholder();
-            // return const ChatScreen();
+            return const SendScreen();
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
