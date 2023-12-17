@@ -1,8 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:inzultz/firebase_options.dart';
 import 'package:inzultz/screens/auth.dart';
-import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,27 +17,13 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'inzultz',
+      title: 'Inzultz',
       theme: ThemeData().copyWith(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
             seedColor: const Color.fromARGB(255, 63, 17, 177)),
       ),
-      home: StreamBuilder(
-        // Can produce multiple values over time unlike FutureBuilder.
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return const Placeholder();
-            // return const ChatScreen();
-          }
-
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            // return const SplashScreen();
-          }
-          return const AuthScreen();
-        },
-      ),
+      home: const AuthScreen(),
     );
   }
 }
