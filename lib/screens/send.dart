@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inzultz/models/contact.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 final _dummyData = [
   Contact(id: "1", name: "Me", phone: "474758700"),
@@ -19,6 +20,12 @@ class _SendScreenState extends State<SendScreen> {
 
   @override
   Widget build(BuildContext context) {
+    Future<void> helloWorld() async {
+      final results = await FirebaseFunctions.instance.httpsCallable('helloWorld').call();
+
+      print(results.data);
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Send'),
@@ -85,7 +92,7 @@ class _SendScreenState extends State<SendScreen> {
                 width: MediaQuery.of(context).size.width,
                 height: MediaQuery.of(context).size.width,
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: helloWorld,
                   style: ButtonStyle(
                     elevation: MaterialStateProperty.all(5),
                     shape: MaterialStateProperty.all(
