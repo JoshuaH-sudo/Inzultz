@@ -1,5 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:inzultz/models/contact.dart';
+
+final _dummyData = [
+  Contact(id: "1", name: "Me", phone: "474758700"),
+  Contact(id: "2", name: "Josh", phone: "474758700"),
+];
 
 class SendScreen extends StatefulWidget {
   const SendScreen({super.key});
@@ -9,7 +15,7 @@ class SendScreen extends StatefulWidget {
 }
 
 class _SendScreenState extends State<SendScreen> {
-  var _selectedContact = 1;
+  var _selectedContact = _dummyData[0];
 
   @override
   Widget build(BuildContext context) {
@@ -50,25 +56,24 @@ class _SendScreenState extends State<SendScreen> {
                           controller.open();
                         }
                       },
-                      child: const Text(
-                        "Mom",
-                        style: TextStyle(
+                      child: Text(
+                        _selectedContact.name,
+                        style: const TextStyle(
                           fontSize: 28,
                         ),
                       ),
                     );
                   },
-                  menuChildren: const [
-                    MenuItemButton(
-                      child: Text("Mom"),
-                    ),
-                    MenuItemButton(
-                      child: Text("Mom"),
-                    ),
-                    MenuItemButton(
-                      child: Text("Mom"),
-                    ),
-                  ],
+                  menuChildren: _dummyData.map((contact) {
+                    return MenuItemButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedContact = contact;
+                        });
+                      },
+                      child: Text(contact.name),
+                    );
+                  }).toList(),
                 )
               ],
             ),
