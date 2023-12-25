@@ -1,12 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 final _dummyData = [
-  Contact(id: "1", name: "Me", phone: "474758700"),
-  Contact(id: "2", name: "Josh", phone: "474758700"),
+
 ];
 
 class SendScreen extends StatefulWidget {
@@ -18,29 +16,18 @@ class SendScreen extends StatefulWidget {
 
 class _SendScreenState extends State<SendScreen> {
   var _selectedContact = _dummyData[0];
-  void setupPushNotification() async {
-    final fcm = FirebaseMessaging.instance;
-
-    final notificationSettings = await fcm.requestPermission();
-
-    final token = await fcm.getToken();
-
-    print('TOKEN: ${token}');
-  }
 
   @override
   void initState() {
     super.initState();
-    setupPushNotification();
   }
 
   @override
   Widget build(BuildContext context) {
     Future<void> helloWorld() async {
-      final results =
-          await FirebaseFunctions.instance.httpsCallable('helloWorld').call({
-        "FCMToken": "...token here"
-      });
+      final results = await FirebaseFunctions.instance
+          .httpsCallable('helloWorld')
+          .call({"FCMToken": _selectedContact.FCMToken});
 
       print(results.data);
     }

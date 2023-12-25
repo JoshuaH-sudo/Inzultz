@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
@@ -11,7 +13,6 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
-  var _isLogin = true;
   var _isVerifying = false;
 
   var _enteredPhoneNumber = '';
@@ -57,11 +58,40 @@ class _AuthScreenState extends State<AuthScreen> {
       verificationId: _verificationCode!,
       smsCode: _smsCode,
     );
+
     await FirebaseAuth.instance.signInWithCredential(credential);
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    try {
+      final fcm = FirebaseMessaging.instance;
+      final notificationSettings = await fcm.requestPermission();
+      if (notificationSettings.authorizationStatus == AuthorizationStatus.denied) {
+        return;
+      }
+
+      final token = await fcm.getToken();
+      print('TOKEN: ${token}');
+
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+      
+      final user = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+      if (!user.exists) {
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'phoneNumber': _enteredPhoneNumber,
+          'FCMToken': token,
+        });
+      }
+      // Ensure the correct FCMToken is stored in the database.
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'FCMToken': token,
+      });
+    } catch (error) {
+      print('Unable to add user $error');
+    }
 
     setState(() {
       _isVerifying = false;
-      _isLogin = false;
     });
   }
 
@@ -88,17 +118,7 @@ class _AuthScreenState extends State<AuthScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         ),
-        child: Text(_isLogin ? "Login" : "Signup"),
-      ),
-      const SizedBox(height: 6),
-      TextButton(
-        onPressed: () {
-          setState(() {
-            _isLogin = !_isLogin;
-          });
-        },
-        child:
-            Text(_isLogin ? 'Create new account' : "I already have an account"),
+        child: const Text("Login"),
       ),
     ];
 
@@ -152,8 +172,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (_isLogin && !_isVerifying) ...loginContent,
-                          if (_isVerifying) ...verifyingContent,
+                          if (_isVerifying)
+                            ...verifyingContent
+                          else
+                            ...loginContent,
                         ],
                       ),
                     ),
