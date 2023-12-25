@@ -34,7 +34,11 @@ class _AuthScreenState extends State<AuthScreen> {
       verificationCompleted: (PhoneAuthCredential credential) async {
         await FirebaseAuth.instance.signInWithCredential(credential);
       },
-      verificationFailed: (FirebaseAuthException e) {},
+      verificationFailed: (FirebaseAuthException e) {
+        setState(() {
+          _isVerifying = false;
+        });
+      },
       codeSent: (String verificationId, int? resendToken) {
         setState(() {
           _isVerifying = true;
