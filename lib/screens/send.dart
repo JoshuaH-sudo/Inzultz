@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+
 class SendScreen extends StatefulWidget {
   const SendScreen({super.key});
 
@@ -14,14 +15,14 @@ class _SendScreenState extends State<SendScreen> {
   List<Contact> _contacts = [];
   Contact? _selectedContact;
 
-  void getContacts () async {
+  void getContacts() async {
     final contacts = await FirebaseFirestore.instance.collection('users').get();
 
     setState(() {
       _contacts = contacts.docs.map((doc) {
         return Contact(
           id: doc.id,
-          name: doc.id,
+          name: doc["name"],
           FCMToken: doc['FCMToken'],
           phoneNumber: doc['phoneNumber'],
         );
@@ -31,7 +32,7 @@ class _SendScreenState extends State<SendScreen> {
 
   @override
   void initState() {
-    getContacts();  
+    getContacts();
     super.initState();
   }
 
@@ -79,6 +80,9 @@ class _SendScreenState extends State<SendScreen> {
                 MenuAnchor(
                   builder: (context, controller, child) {
                     return ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(150, 50),
+                      ),
                       onPressed: () {
                         if (controller.isOpen) {
                           controller.close();
@@ -88,6 +92,7 @@ class _SendScreenState extends State<SendScreen> {
                       },
                       child: Text(
                         _selectedContact?.name ?? "Select a contact",
+                        maxLines: 1,
                         style: const TextStyle(
                           fontSize: 28,
                         ),

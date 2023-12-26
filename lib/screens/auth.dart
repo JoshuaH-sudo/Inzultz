@@ -12,14 +12,16 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
-  final _formKey = GlobalKey<FormState>();
   var _isVerifying = false;
+  var _isSignup = false;
 
+  final _formKey = GlobalKey<FormState>();
+  var _enteredName = '';
   var _enteredPhoneNumber = '';
 
   String? _verificationCode;
   int? _resendToken;
-  var _smsCode = '';
+  String? _smsCode;
 
   _onSubmit() async {
     final isValid = _formKey.currentState!.validate();
@@ -60,7 +62,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     final credential = PhoneAuthProvider.credential(
       verificationId: _verificationCode!,
-      smsCode: _smsCode,
+      smsCode: _smsCode!,
     );
 
     await FirebaseAuth.instance.signInWithCredential(credential);
@@ -69,18 +71,21 @@ class _AuthScreenState extends State<AuthScreen> {
     try {
       final fcm = FirebaseMessaging.instance;
       final notificationSettings = await fcm.requestPermission();
-      if (notificationSettings.authorizationStatus == AuthorizationStatus.denied) {
+      if (notificationSettings.authorizationStatus ==
+          AuthorizationStatus.denied) {
         return;
       }
 
       final token = await fcm.getToken();
-      print('TOKEN: ${token}');
+      print('TOKEN: $token');
 
       final uid = FirebaseAuth.instance.currentUser!.uid;
-      final user = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final user =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       if (!user.exists) {
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'name': _enteredName,
           'phoneNumber': _enteredPhoneNumber,
           'FCMToken': token,
         });
@@ -100,7 +105,34 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    var signupContext = [
+      TextFormField(
+        maxLength: 25,
+        maxLines: 1,
+        decoration: const InputDecoration(
+          labelText: 'Name',
+          border: OutlineInputBorder(
+            borderSide: BorderSide(),
+          ),
+        ),
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) {
+            return 'Please enter a name';
+          }
+          return null;
+        },
+        initialValue: '',
+        onSaved: (value) {
+          setState(() {
+            _enteredName = value!;
+          });
+        },
+      ),
+      const SizedBox(height: 12),
+    ];
+
     var loginContent = [
+      if (_isSignup) ...signupContext,
       IntlPhoneField(
         decoration: const InputDecoration(
           labelText: 'Phone Number',
@@ -121,8 +153,15 @@ class _AuthScreenState extends State<AuthScreen> {
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         ),
-        child: const Text("Login"),
+        child: Text(_isSignup ? "Create Account" : "Login"),
       ),
+      TextButton(
+          onPressed: () {
+            setState(() {
+              _isSignup = !_isSignup;
+            });
+          },
+          child: Text(_isSignup ? "I have an account?" : "Signup"))
     ];
 
     var verifyingContent = [
@@ -140,6 +179,7 @@ class _AuthScreenState extends State<AuthScreen> {
           }
           return null;
         },
+        initialValue: '',
         onSaved: (value) {
           setState(() {
             _smsCode = value!;
@@ -155,7 +195,7 @@ class _AuthScreenState extends State<AuthScreen> {
         child: const Text("Verify"),
       ),
       const SizedBox(height: 6),
-      TextButton(onPressed: () {}, child: const Text("Resend code")),
+      // TextButton(onPressed: () {}, child: const Text("Resend code")),
     ];
 
     return Scaffold(
