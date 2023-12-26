@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:inzultz/screens/add_contact.dart';
 
 class SendScreen extends StatefulWidget {
   const SendScreen({super.key});
@@ -16,10 +17,23 @@ class _SendScreenState extends State<SendScreen> {
   Contact? _selectedContact;
 
   void getContacts() async {
-    final contacts = await FirebaseFirestore.instance.collection('users').get();
+    final currentUser = FirebaseAuth.instance.currentUser!;
+    final currentUserData = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
+
+    final contacts = currentUserData['contacts'];    
+    print('contacts: $contacts');
+
+    final contactsData = await FirebaseFirestore.instance
+        .collection('users')
+        .where('uid', whereIn: contacts)
+        .get();
+    print('contactsData: ${contactsData.docs}');
 
     setState(() {
-      _contacts = contacts.docs.map((doc) {
+      _contacts = contactsData.docs.map((doc) {
         return Contact(
           id: doc.id,
           name: doc["name"],
@@ -50,10 +64,20 @@ class _SendScreenState extends State<SendScreen> {
       print(results.data);
     }
 
+    void addNewContact() async {
+      Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+        return const AddContact();
+      }));
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Send'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_alt_sharp),
+            onPressed: addNewContact,
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
@@ -72,7 +96,7 @@ class _SendScreenState extends State<SendScreen> {
               children: [
                 const Text(
                   "Tell,",
-                  style: TextStyle(fontSize: 28),
+                  style: TextStyle(fontSize: 20),
                 ),
                 const SizedBox(
                   width: 8,
@@ -94,7 +118,7 @@ class _SendScreenState extends State<SendScreen> {
                         _selectedContact?.name ?? "Select a contact",
                         maxLines: 1,
                         style: const TextStyle(
-                          fontSize: 28,
+                          fontSize: 20,
                         ),
                       ),
                     );
@@ -109,7 +133,7 @@ class _SendScreenState extends State<SendScreen> {
                       child: Text(contact.name),
                     );
                   }).toList(),
-                )
+                ),
               ],
             ),
             const SizedBox(

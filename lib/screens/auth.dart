@@ -85,6 +85,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
       if (!user.exists) {
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'id': uid,
           'name': _enteredName,
           'phoneNumber': _enteredPhoneNumber,
           'FCMToken': token,
