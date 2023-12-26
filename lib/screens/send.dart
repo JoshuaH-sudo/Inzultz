@@ -1,12 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-
-final _dummyData = [
-
-];
-
 class SendScreen extends StatefulWidget {
   const SendScreen({super.key});
 
@@ -15,19 +11,40 @@ class SendScreen extends StatefulWidget {
 }
 
 class _SendScreenState extends State<SendScreen> {
-  var _selectedContact = _dummyData[0];
+  List<Contact> _contacts = [];
+  Contact? _selectedContact;
+
+  void getContacts () async {
+    final contacts = await FirebaseFirestore.instance.collection('users').get();
+
+    setState(() {
+      _contacts = contacts.docs.map((doc) {
+        return Contact(
+          id: doc.id,
+          name: doc.id,
+          FCMToken: doc['FCMToken'],
+          phoneNumber: doc['phoneNumber'],
+        );
+      }).toList();
+    });
+  }
 
   @override
   void initState() {
+    getContacts();  
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     Future<void> helloWorld() async {
+      if (_selectedContact == null) {
+        return;
+      }
+
       final results = await FirebaseFunctions.instance
           .httpsCallable('helloWorld')
-          .call({"FCMToken": _selectedContact.FCMToken});
+          .call({"FCMToken": _selectedContact!.FCMToken});
 
       print(results.data);
     }
@@ -47,7 +64,7 @@ class _SendScreenState extends State<SendScreen> {
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -70,14 +87,14 @@ class _SendScreenState extends State<SendScreen> {
                         }
                       },
                       child: Text(
-                        _selectedContact.name,
+                        _selectedContact?.name ?? "Select a contact",
                         style: const TextStyle(
                           fontSize: 28,
                         ),
                       ),
                     );
                   },
-                  menuChildren: _dummyData.map((contact) {
+                  menuChildren: _contacts.map((contact) {
                     return MenuItemButton(
                       onPressed: () {
                         setState(() {

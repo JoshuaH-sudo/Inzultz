@@ -77,7 +77,6 @@ class _AuthScreenState extends State<AuthScreen> {
       print('TOKEN: ${token}');
 
       final uid = FirebaseAuth.instance.currentUser!.uid;
-      
       final user = await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       if (!user.exists) {
