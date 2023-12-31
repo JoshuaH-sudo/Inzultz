@@ -18,40 +18,59 @@ admin.initializeApp();
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
 
-export const helloWorld = onRequest(async (request, response) => {
-  logger.info("Hello logs!", { structuredData: true });
-  logger.info("Send Notification", request);
+export const sendNotification = onRequest(async (request, response) => {
+  logger.info("Send Notification", { structuredData: true, request });
 
   try {
-    const token = request.body.data.FCMToken;
-    if (token === undefined) {
+    // Validate request body
+    const FCMToken = request.body.data.FCMToken;
+    if (FCMToken === undefined) {
       logger.error("FCMToken is undefined");
       response.json({ data: "Hello from Firebase!" });
       return;
     }
 
+    // Check if user is authorized.
     const authorization = request.get("Authorization");
-    const tokenId = authorization?.split("Bearer ")[1];
+    const userAuthTokenId = authorization?.split("Bearer ")[1];
+    if (!userAuthTokenId) {
+      response.json({ data: { ok: false, error: "Unauthorized user" } });
+      return;
+    }
 
-    if (!tokenId) return;
+    // Get request user data
+    const decodedToken = await admin.auth().verifyIdToken(userAuthTokenId);
+    const uid = decodedToken.uid;
+    const requestUserDocs = await admin
+      .firestore()
+      .collection("users")
+      .doc(uid)
+      .get();
+    const requestUser = requestUserDocs.data();
+    if (!requestUser) {
+      response.json({ data: { ok: false, error: "Unauthorized user" } });
+      return;
+    }
 
-    await admin.auth().verifyIdToken(tokenId);
+    const { name } = requestUser;
     await admin.messaging().send({
-      token,
+      token: FCMToken,
       notification: {
-        title: "Hello",
-        body: "Hello from Firebase!",
+        title: `${name} says FUCK YOU!`,
+        body: `Your friend ${name} wanted to express a sincere message`,
       },
     });
   } catch (error) {
     logger.error(error);
+    response.json({ data: { ok: false, error } });
+    return;
   }
 
-  response.json({ data: "Hello from Firebase!" });
+  response.json({ data: { ok: true } });
 });
 
 export const checkPhoneNumberIsUsed = onRequest(async (request, response) => {
-  logger.info("Check User Exists", request);
+  logger.info("Check User Exists", { structuredData: true, request });
 
   try {
     const phoneNumber = request.body.data.phoneNumber;

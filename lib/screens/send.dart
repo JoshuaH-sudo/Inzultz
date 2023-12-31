@@ -52,13 +52,13 @@ class _SendScreenState extends State<SendScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Future<void> helloWorld() async {
+    Future<void> sendNotification() async {
       if (_selectedContact == null) {
         return;
       }
 
       final results = await FirebaseFunctions.instance
-          .httpsCallable('helloWorld')
+          .httpsCallable('sendNotification')
           .call({"FCMToken": _selectedContact!.FCMToken});
 
       print(results.data);
@@ -144,7 +144,7 @@ class _SendScreenState extends State<SendScreen> {
                 width: MediaQuery.of(context).size.width,
                 height: MediaQuery.of(context).size.width,
                 child: ElevatedButton(
-                  onPressed: helloWorld,
+                  onPressed: sendNotification,
                   style: ButtonStyle(
                     elevation: MaterialStateProperty.all(5),
                     shape: MaterialStateProperty.all(
