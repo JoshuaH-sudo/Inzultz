@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  var _isLoading = false;
   var _isVerifying = false;
   var _isSignup = false;
 
@@ -24,40 +26,83 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _smsCode;
 
   _onSubmit() async {
+    print('Submitting');
+    setState(() {
+      _isLoading = true;
+    });
     final isValid = _formKey.currentState!.validate();
     if (!isValid) {
+      print('Invalid');
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+    _formKey.currentState!.save();
+    print('Form saved $_enteredPhoneNumber');
+
+    final response = await FirebaseFunctions.instance
+        .httpsCallable('checkPhoneNumberIsUsed')
+        .call({'phoneNumber': _enteredPhoneNumber});
+
+    if (response.data['error'] != null) {
+      print('Error: ${response.data['error']}');
+      _showMessage(
+        'Unexpected error occurred, please try again.',
+        isError: true,
+      );
+      setState(() {
+        _isLoading = false;
+      });
       return;
     }
 
-    _formKey.currentState!.save();
+    if (response.data['isUsed']) {
+      print('Phone number is used');
+      _showMessage('Phone number is already in use', isError: true);
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    print('Phone number is not used');
 
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: _enteredPhoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
+        print('Verification completed');
         await FirebaseAuth.instance.signInWithCredential(credential);
       },
       verificationFailed: (FirebaseAuthException e) {
+        print('Failed to verify phone number: ${e.message}');
         setState(() {
           _isVerifying = false;
+          _isLoading = false;
         });
       },
       codeSent: (String verificationId, int? resendToken) {
+        print('Code sent');
         setState(() {
           _isVerifying = true;
+          _isLoading = false;
           _verificationCode = verificationId;
           _resendToken = resendToken;
         });
+        _formKey.currentState!.reset();
       },
       codeAutoRetrievalTimeout: (String verificationId) {},
     );
   }
 
   _sendSMSCode() async {
+    setState(() {
+      _isLoading = true;
+    });
     final isValid = _formKey.currentState!.validate();
     if (!isValid) {
       return;
     }
-
     _formKey.currentState!.save();
 
     final credential = PhoneAuthProvider.credential(
@@ -66,7 +111,6 @@ class _AuthScreenState extends State<AuthScreen> {
     );
 
     await FirebaseAuth.instance.signInWithCredential(credential);
-    final uid = FirebaseAuth.instance.currentUser!.uid;
 
     try {
       final fcm = FirebaseMessaging.instance;
@@ -84,24 +128,41 @@ class _AuthScreenState extends State<AuthScreen> {
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       if (!user.exists) {
+        print('Adding user');
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
           'id': uid,
           'name': _enteredName,
           'phoneNumber': _enteredPhoneNumber,
           'FCMToken': token,
         });
+      } else {
+        await FirebaseFirestore.instance.collection('users').doc(uid).update({
+          'FCMToken': token,
+        });
       }
-      // Ensure the correct FCMToken is stored in the database.
-      await FirebaseFirestore.instance.collection('users').doc(uid).update({
-        'FCMToken': token,
-      });
     } catch (error) {
       print('Unable to add user $error');
+      _showMessage(
+        'Unexpected error occurred, please try again.',
+        isError: true,
+      );
     }
 
+    _formKey.currentState!.reset();
     setState(() {
       _isVerifying = false;
+      _isLoading = false;
     });
+  }
+
+  _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -142,27 +203,37 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
         initialCountryCode: 'AU',
-        onChanged: (phone) {
+        onSaved: (phone) {
           setState(() {
-            _enteredPhoneNumber = phone.completeNumber;
+            _enteredPhoneNumber = phone!.completeNumber;
           });
         },
       ),
       const SizedBox(height: 12),
-      ElevatedButton(
-        onPressed: _onSubmit,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      if (_isLoading)
+        const CircularProgressIndicator()
+      else
+        ElevatedButton(
+          onPressed: _onSubmit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          ),
+          child: Text(_isSignup ? "Create Account" : "Login"),
         ),
-        child: Text(_isSignup ? "Create Account" : "Login"),
-      ),
       TextButton(
           onPressed: () {
+            if (_isLoading) return;
+
             setState(() {
               _isSignup = !_isSignup;
             });
           },
-          child: Text(_isSignup ? "I have an account?" : "Signup"))
+          child: Text(
+            _isSignup ? "I have an account?" : "Sign up",
+            style: TextStyle(
+              color: _isLoading ? Colors.grey : Colors.black,
+            ),
+          ))
     ];
 
     var verifyingContent = [

@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable object-curly-spacing */
-/* eslint-disable max-len */
 /**
  * Import function triggers from their respective submodules:
  *
@@ -11,7 +11,6 @@
 
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
-// import functions = require("firebase-functions");
 import admin = require("firebase-admin");
 
 admin.initializeApp();
@@ -49,4 +48,31 @@ export const helloWorld = onRequest(async (request, response) => {
   }
 
   response.json({ data: "Hello from Firebase!" });
+});
+
+export const checkPhoneNumberIsUsed = onRequest(async (request, response) => {
+  logger.info("Check User Exists", request);
+
+  try {
+    const phoneNumber = request.body.data.phoneNumber;
+    if (phoneNumber === undefined) {
+      logger.error("phoneNumber is undefined");
+      response.json({ error: "Must provide a phone number" });
+      return;
+    }
+
+    await admin.auth().getUserByPhoneNumber(phoneNumber);
+
+    response.json({ data: { isUsed: true } });
+  } catch (error) {
+    logger.error(error);
+
+    // @ts-ignore
+    if (error?.errorInfo?.code === "auth/user-not-found") {
+      response.json({ data: { isUsed: false } });
+      return;
+    }
+
+    response.json({ error });
+  }
 });
