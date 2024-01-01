@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-import 'package:inzultz/screens/add_contact.dart';
+import 'package:inzultz/screens/manage_contacts.dart';
 
 class SendScreen extends StatefulWidget {
   const SendScreen({super.key});
@@ -66,7 +66,7 @@ class _SendScreenState extends State<SendScreen> {
 
     void addNewContact() async {
       Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-        return const AddContact();
+        return const ManageContacts();
       }));
     }
 
