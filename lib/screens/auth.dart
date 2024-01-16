@@ -22,7 +22,7 @@ class _AuthScreenState extends State<AuthScreen> {
   var _enteredPhoneNumber = '';
 
   String? _verificationCode;
-  int? _resendToken;
+  // int? _resendToken;
   String? _smsCode;
 
   _onSubmit() async {
@@ -89,7 +89,7 @@ class _AuthScreenState extends State<AuthScreen> {
           _isVerifying = true;
           _isLoading = false;
           _verificationCode = verificationId;
-          _resendToken = resendToken;
+          // _resendToken = resendToken;
         });
         _formKey.currentState!.reset();
       },

@@ -22,7 +22,7 @@ class _AddContactState extends State<AddContact> {
       }
       _formKey.currentState!.save();
 
-      final currentUser = FirebaseAuth.instance!.currentUser;
+      final currentUser = FirebaseAuth.instance.currentUser;
       final currentUserData = await FirebaseFirestore.instance
           .collection('users')
           .doc(currentUser!.uid)
