@@ -52,6 +52,7 @@ class _SendScreenState extends State<SendScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser!;
     Future<void> sendNotification() async {
       if (_selectedContact == null) {
         return;
@@ -72,7 +73,7 @@ class _SendScreenState extends State<SendScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Send'),
+        title: Text(currentUser.displayName!),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add_alt_sharp),
