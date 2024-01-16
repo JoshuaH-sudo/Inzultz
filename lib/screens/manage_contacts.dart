@@ -58,14 +58,21 @@ class ManageContacts extends StatelessWidget {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.done) {
               return ListView.builder(
-                itemCount: snapshot.data?.length,
+                itemCount: snapshot.data == null ? 0 : snapshot.data!.length,
                 itemBuilder: (context, index) {
                   if (snapshot.data == null) {
                     return const Center(
-                      child: Text('No contacts found'),
-                    );
+                        child: Center(
+                      child: Text(
+                        'No contacts found',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ));
                   }
-                  
+
                   return ListTile(
                     title: Text(snapshot.data![index].name),
                     subtitle: Text(snapshot.data![index].phoneNumber),
