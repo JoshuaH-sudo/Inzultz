@@ -20,6 +20,10 @@ class ManageContacts extends StatelessWidget {
       final contacts = currentUserData['contacts'];
       print('contacts: $contacts');
 
+      if (contacts.isEmpty) {
+        return [];
+      }
+
       final contactsData = await FirebaseFirestore.instance
           .collection('users')
           .where('uid', whereIn: contacts)
@@ -68,59 +72,93 @@ class ManageContacts extends StatelessWidget {
               .doc(FirebaseAuth.instance.currentUser!.uid)
               .snapshots(),
           initialData: const [],
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+          builder: (context, currentUserSnapshot) {
+            if (currentUserSnapshot.connectionState ==
+                ConnectionState.waiting) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
             }
-            return FutureBuilder(
-                future: getContacts(snapshot.data),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    return ListView.builder(
-                      itemCount: snapshot.hasData ? snapshot.data?.length : 0,
-                      itemBuilder: (context, index) {
-                        if (snapshot.data == null) {
-                          return const Center(
-                              child: Center(
-                            child: Text(
-                              'No contacts found',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 20,
-                              ),
-                            ),
-                          ));
-                        }
+            if (currentUserSnapshot.hasError) {
+              print('Error: ${currentUserSnapshot.error}');
+              return const Center(
+                child: Text('An error occurred!', style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 20,
+                ),),
+              );
+            }
 
-                        return Dismissible(
-                          key: Key(snapshot.data![index].id),
-                          background: Container(
-                            color: Colors.red,
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            alignment: Alignment.centerRight,
-                            child: const Icon(
-                              Icons.delete,
-                              color: Colors.white,
-                            ),
-                          ),
-                          direction: DismissDirection.endToStart,
-                          onDismissed: (direction) {
-                            removeContact(snapshot.data![index].id);
-                          },
-                          child: ListTile(
-                            title: Text(snapshot.data![index].name),
-                            subtitle: Text(snapshot.data![index].phoneNumber),
-                          ),
-                        );
-                      },
-                    );
-                  } else {
+            return FutureBuilder(
+                future: getContacts(currentUserSnapshot.data),
+                builder: (context, contactsSnapshot) {
+                  if (contactsSnapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (contactsSnapshot.hasError) {
+                    print('Error: ${contactsSnapshot.error}');
                     return const Center(
-                      child: CircularProgressIndicator(),
+                      child: Text('An error occurred!', style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 20,
+                      ),),
                     );
                   }
+
+                  if (contactsSnapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'No contacts found',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 20,
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: contactsSnapshot.hasData
+                        ? contactsSnapshot.data?.length
+                        : 0,
+                    itemBuilder: (context, index) {
+                      if (contactsSnapshot.data!.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            'No contacts found',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 20,
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Dismissible(
+                        key: Key(contactsSnapshot.data![index].id),
+                        background: Container(
+                          color: Colors.red,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          alignment: Alignment.centerRight,
+                          child: const Icon(
+                            Icons.delete,
+                            color: Colors.white,
+                          ),
+                        ),
+                        direction: DismissDirection.endToStart,
+                        onDismissed: (direction) {
+                          removeContact(contactsSnapshot.data![index].id);
+                        },
+                        child: ListTile(
+                          title: Text(contactsSnapshot.data![index].name),
+                          subtitle:
+                              Text(contactsSnapshot.data![index].phoneNumber),
+                        ),
+                      );
+                    },
+                  );
                 });
           }),
     );
