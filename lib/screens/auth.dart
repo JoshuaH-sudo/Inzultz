@@ -22,7 +22,7 @@ class _AuthScreenState extends State<AuthScreen> {
   var _enteredPhoneNumber = '';
 
   String? _verificationCode;
-  int? _resendToken;
+  // int? _resendToken;
   String? _smsCode;
 
   _onSubmit() async {
@@ -41,32 +41,34 @@ class _AuthScreenState extends State<AuthScreen> {
     _formKey.currentState!.save();
     print('Form saved $_enteredPhoneNumber');
 
-    final response = await FirebaseFunctions.instance
-        .httpsCallable('checkPhoneNumberIsUsed')
-        .call({'phoneNumber': _enteredPhoneNumber});
+    if (_isSignup) {
+      final response = await FirebaseFunctions.instance
+          .httpsCallable('checkPhoneNumberIsUsed')
+          .call({'phoneNumber': _enteredPhoneNumber});
 
-    if (response.data['error'] != null) {
-      print('Error: ${response.data['error']}');
-      _showMessage(
-        'Unexpected error occurred, please try again.',
-        isError: true,
-      );
-      setState(() {
-        _isLoading = false;
-      });
-      return;
+      if (response.data['error'] != null) {
+        print('Error: ${response.data['error']}');
+        _showMessage(
+          'Unexpected error occurred, please try again.',
+          isError: true,
+        );
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      if (response.data['isUsed']) {
+        print('Phone number is used');
+        _showMessage('Phone number is already in use', isError: true);
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      print('Phone number is not used');
     }
-
-    if (response.data['isUsed']) {
-      print('Phone number is used');
-      _showMessage('Phone number is already in use', isError: true);
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
-
-    print('Phone number is not used');
 
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: _enteredPhoneNumber,
@@ -87,7 +89,7 @@ class _AuthScreenState extends State<AuthScreen> {
           _isVerifying = true;
           _isLoading = false;
           _verificationCode = verificationId;
-          _resendToken = resendToken;
+          // _resendToken = resendToken;
         });
         _formKey.currentState!.reset();
       },

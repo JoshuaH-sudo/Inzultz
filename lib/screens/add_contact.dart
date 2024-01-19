@@ -1,8 +1,5 @@
-import 'dart:ffi';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
@@ -25,7 +22,7 @@ class _AddContactState extends State<AddContact> {
       }
       _formKey.currentState!.save();
 
-      final currentUser = FirebaseAuth.instance!.currentUser;
+      final currentUser = FirebaseAuth.instance.currentUser;
       final currentUserData = await FirebaseFirestore.instance
           .collection('users')
           .doc(currentUser!.uid)
