@@ -80,7 +80,7 @@ class ManageContacts extends StatelessWidget {
               );
             }
             if (currentUserSnapshot.hasError) {
-              print('Error: ${currentUserSnapshot.error}');
+              print('CurrentUserSnapshot Error: ${currentUserSnapshot.error}');
               return const Center(
                 child: Text('An error occurred!', style: TextStyle(
                   color: Colors.red,
@@ -98,7 +98,7 @@ class ManageContacts extends StatelessWidget {
                   }
 
                   if (contactsSnapshot.hasError) {
-                    print('Error: ${contactsSnapshot.error}');
+                    print('contactsSnapshot Error: ${contactsSnapshot.error}');
                     return const Center(
                       child: Text('An error occurred!', style: TextStyle(
                         color: Colors.red,
