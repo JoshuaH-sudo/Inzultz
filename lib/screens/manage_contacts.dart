@@ -42,6 +42,22 @@ class ManageContacts extends StatelessWidget {
       }).toList();
     }
 
+    Future<void> removeContact(String id) async {
+      final currentUser = FirebaseAuth.instance.currentUser!;
+      final currentUserData = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      final contacts = currentUserData['contacts'];
+      contacts.remove(id);
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .update({'contacts': contacts});
+    }
+
     return Scaffold(
         appBar: AppBar(
           title: const Text('Manage Contacts'),
@@ -73,9 +89,25 @@ class ManageContacts extends StatelessWidget {
                     ));
                   }
 
-                  return ListTile(
-                    title: Text(snapshot.data![index].name),
-                    subtitle: Text(snapshot.data![index].phoneNumber),
+                  return Dismissible(
+                    key: Key(snapshot.data![index].id),
+                    background: Container(
+                      color: Colors.red,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      alignment: Alignment.centerRight,
+                      child: const Icon(
+                        Icons.delete,
+                        color: Colors.white,
+                      ),
+                    ),
+                    direction: DismissDirection.endToStart,
+                    onDismissed: (direction) {
+                      removeContact(snapshot.data![index].id);
+                    },
+                    child: ListTile(
+                      title: Text(snapshot.data![index].name),
+                      subtitle: Text(snapshot.data![index].phoneNumber),
+                    ),
                   );
                 },
               );
