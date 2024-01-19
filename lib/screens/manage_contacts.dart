@@ -16,13 +16,7 @@ class ManageContacts extends StatelessWidget {
       }));
     }
 
-    Future<List<Contact>> getContacts() async {
-      final currentUser = FirebaseAuth.instance.currentUser!;
-      final currentUserData = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUser.uid)
-          .get();
-
+    Future<List<Contact>> getContacts(currentUserData) async {
       final contacts = currentUserData['contacts'];
       print('contacts: $contacts');
 
@@ -59,64 +53,76 @@ class ManageContacts extends StatelessWidget {
     }
 
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Manage Contacts'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.person_add_alt_sharp),
-              onPressed: addNewContact,
-            ),
-          ],
-        ),
-        body: FutureBuilder(
-          future: getContacts(),
+      appBar: AppBar(
+        title: const Text('Manage Contacts'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_alt_sharp),
+            onPressed: addNewContact,
+          ),
+        ],
+      ),
+      body: StreamBuilder(
+          stream: FirebaseFirestore.instance
+              .collection('users')
+              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .snapshots(),
           initialData: const [],
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.done) {
-              return ListView.builder(
-                itemCount: snapshot.data == null ? 0 : snapshot.data!.length,
-                itemBuilder: (context, index) {
-                  if (snapshot.data == null) {
-                    return const Center(
-                        child: Center(
-                      child: Text(
-                        'No contacts found',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 20,
-                        ),
-                      ),
-                    ));
-                  }
-
-                  return Dismissible(
-                    key: Key(snapshot.data![index].id),
-                    background: Container(
-                      color: Colors.red,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      alignment: Alignment.centerRight,
-                      child: const Icon(
-                        Icons.delete,
-                        color: Colors.white,
-                      ),
-                    ),
-                    direction: DismissDirection.endToStart,
-                    onDismissed: (direction) {
-                      removeContact(snapshot.data![index].id);
-                    },
-                    child: ListTile(
-                      title: Text(snapshot.data![index].name),
-                      subtitle: Text(snapshot.data![index].phoneNumber),
-                    ),
-                  );
-                },
-              );
-            } else {
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
             }
-          },
-        ));
+            return FutureBuilder(
+                future: getContacts(snapshot.data),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    return ListView.builder(
+                      itemCount: snapshot.hasData ? snapshot.data?.length : 0,
+                      itemBuilder: (context, index) {
+                        if (snapshot.data == null) {
+                          return const Center(
+                              child: Center(
+                            child: Text(
+                              'No contacts found',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 20,
+                              ),
+                            ),
+                          ));
+                        }
+
+                        return Dismissible(
+                          key: Key(snapshot.data![index].id),
+                          background: Container(
+                            color: Colors.red,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            alignment: Alignment.centerRight,
+                            child: const Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                            ),
+                          ),
+                          direction: DismissDirection.endToStart,
+                          onDismissed: (direction) {
+                            removeContact(snapshot.data![index].id);
+                          },
+                          child: ListTile(
+                            title: Text(snapshot.data![index].name),
+                            subtitle: Text(snapshot.data![index].phoneNumber),
+                          ),
+                        );
+                      },
+                    );
+                  } else {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                });
+          }),
+    );
   }
 }
