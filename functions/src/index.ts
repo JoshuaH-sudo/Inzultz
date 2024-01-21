@@ -12,7 +12,7 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import admin = require("firebase-admin");
-import { findUserByNumber } from "./helpers";
+import { findUserByNumber, validate } from "./helpers";
 
 admin.initializeApp();
 
@@ -85,15 +85,12 @@ export const checkPhoneNumberIsUsed = onRequest(async (request, response) => {
 });
 
 export const sendContactRequest = onRequest(async (request, response) => {
-  // Check if user is authenticated.
-  const authorization = request.get("Authorization");
-  const userAuthTokenId = authorization?.split("Bearer ")[1];
-  if (!userAuthTokenId) {
+  const user = await validate(request);
+
+  if (!user) {
     response.json({ data: { ok: false, error: "Unauthorized user" } });
     return;
   }
-  const decodedToken = await admin.auth().verifyIdToken(userAuthTokenId);
-  const requestUserUid = decodedToken.uid;
 
   // Validate request body
   const phoneNumber = request.body.data.phoneNumber;
@@ -102,25 +99,38 @@ export const sendContactRequest = onRequest(async (request, response) => {
     response.json({ data: { ok: false, error: "phoneNumber is undefined" } });
     return;
   }
+  // Get the user from the phone number
   const newContactUser = await findUserByNumber(phoneNumber);
   if (!newContactUser) {
     logger.error("User not found");
     response.json({ data: { ok: false, error: "User not found" } });
     return;
   }
+
+  // Create a request
   const newContactRequestDoc = await admin
     .firestore()
-    .doc(`users/${requestUserUid}`)
+    .doc(`users/${user.uid}`)
     .collection("contact_requests")
     .add({
-      from: requestUserUid,
+      from: user.uid,
       to: newContactUser.uid,
       status: "pending",
     });
 
+  // Send a notification to the new contact user
+  const { name } = user;
+  await admin.messaging().send({
+    token: newContactUser.FCMToken,
+    notification: {
+      title: `Contact request from ${name}`,
+      body: `${name} wants to add you to their contacts`,
+    },
+  });
+
   logger.info("Contact Request Sent", {
     structuredData: true,
-    requestUserUid,
+    user,
     newContactUser,
     newContactRequestDoc,
   });
