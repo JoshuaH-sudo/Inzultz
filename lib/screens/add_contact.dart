@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -36,23 +37,36 @@ class _AddContactState extends State<AddContact> {
         return showMessage("You cannot add yourself as a contact", isError: true);
       }
 
-      final foundContacts = await FirebaseFirestore.instance
-          .collection('users')
-          .where("phoneNumber", isEqualTo: _enteredPhoneNumber)
-          .get();
+      final response = await FirebaseFunctions.instance
+          .httpsCallable('sendContactRequest')
+          .call({'phoneNumber': _enteredPhoneNumber});
 
-      if (foundContacts.docs.isEmpty) {
-        return showMessage("No contact found with that phone number", isError: true);
+      if (response.data['error'] != null) {
+        print('Error: ${response.data['error']}');
+        showMessage(
+          'Unexpected error occurred, please try again.',
+          isError: true,
+        );
+        return;
       }
-      final foundContact = foundContacts.docs.first;
 
-      final currentUserId = FirebaseAuth.instance.currentUser!.uid;
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentUserId)
-          .update({
-        "contacts": FieldValue.arrayUnion([foundContact.id])
-      });
+      // final foundContacts = await FirebaseFirestore.instance
+      //     .collection('users')
+      //     .where("phoneNumber", isEqualTo: _enteredPhoneNumber)
+      //     .get();
+
+      // if (foundContacts.docs.isEmpty) {
+      //   return showMessage("No contact found with that phone number", isError: true);
+      // }
+      // final foundContact = foundContacts.docs.first;
+
+      // final currentUserId = FirebaseAuth.instance.currentUser!.uid;
+      // await FirebaseFirestore.instance
+      //     .collection('request')
+      //     .doc(currentUserId)
+      //     .update({
+      //   "contacts": FieldValue.arrayUnion([foundContact.id])
+      // });
 
       returnToPreviousScreen();
     } catch (error) {

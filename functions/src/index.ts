@@ -12,6 +12,7 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import admin = require("firebase-admin");
+import { findUserByNumber } from "./helpers";
 
 admin.initializeApp();
 
@@ -22,19 +23,19 @@ export const sendNotification = onRequest(async (request, response) => {
   logger.info("Send Notification", { structuredData: true, request });
 
   try {
-    // Validate request body
-    const FCMToken = request.body.data.FCMToken;
-    if (FCMToken === undefined) {
-      logger.error("FCMToken is undefined");
-      response.json({ data: "Hello from Firebase!" });
-      return;
-    }
-
     // Check if user is authorized.
     const authorization = request.get("Authorization");
     const userAuthTokenId = authorization?.split("Bearer ")[1];
     if (!userAuthTokenId) {
       response.json({ data: { ok: false, error: "Unauthorized user" } });
+      return;
+    }
+
+    // Validate request body.
+    const FCMToken = request.body.data.FCMToken;
+    if (FCMToken === undefined) {
+      logger.error("FCMToken is undefined");
+      response.json({ data: { ok: false, error: "FCMToken is undefined" } });
       return;
     }
 
@@ -72,26 +73,57 @@ export const sendNotification = onRequest(async (request, response) => {
 export const checkPhoneNumberIsUsed = onRequest(async (request, response) => {
   logger.info("Check User Exists", { structuredData: true, request });
 
-  try {
-    const phoneNumber = request.body.data.phoneNumber;
-    if (phoneNumber === undefined) {
-      logger.error("phoneNumber is undefined");
-      response.json({ error: "Must provide a phone number" });
-      return;
-    }
-
-    await admin.auth().getUserByPhoneNumber(phoneNumber);
-
-    response.json({ data: { isUsed: true } });
-  } catch (error) {
-    logger.error(error);
-
-    // @ts-ignore
-    if (error?.errorInfo?.code === "auth/user-not-found") {
-      response.json({ data: { isUsed: false } });
-      return;
-    }
-
-    response.json({ error });
+  const phoneNumber = request.body.data.phoneNumber;
+  if (phoneNumber === undefined) {
+    logger.error("phoneNumber is undefined");
+    response.json({ error: "Must provide a phone number" });
+    return;
   }
+
+  const user = await findUserByNumber(phoneNumber);
+  response.json({ data: { isUsed: !!user } });
+});
+
+export const sendContactRequest = onRequest(async (request, response) => {
+  // Check if user is authenticated.
+  const authorization = request.get("Authorization");
+  const userAuthTokenId = authorization?.split("Bearer ")[1];
+  if (!userAuthTokenId) {
+    response.json({ data: { ok: false, error: "Unauthorized user" } });
+    return;
+  }
+  const decodedToken = await admin.auth().verifyIdToken(userAuthTokenId);
+  const requestUserUid = decodedToken.uid;
+
+  // Validate request body
+  const phoneNumber = request.body.data.phoneNumber;
+  if (phoneNumber === undefined) {
+    logger.error("phoneNumber is undefined");
+    response.json({ data: { ok: false, error: "phoneNumber is undefined" } });
+    return;
+  }
+  const newContactUser = await findUserByNumber(phoneNumber);
+  if (!newContactUser) {
+    logger.error("User not found");
+    response.json({ data: { ok: false, error: "User not found" } });
+    return;
+  }
+  const newContactRequestDoc = await admin
+    .firestore()
+    .doc(`users/${requestUserUid}`)
+    .collection("contact_requests")
+    .add({
+      from: requestUserUid,
+      to: newContactUser.uid,
+      status: "pending",
+    });
+
+  logger.info("Contact Request Sent", {
+    structuredData: true,
+    requestUserUid,
+    newContactUser,
+    newContactRequestDoc,
+  });
+
+  response.json({ data: { ok: true, message: "Request sent." } });
 });
