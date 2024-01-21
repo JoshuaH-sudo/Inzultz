@@ -20,7 +20,7 @@ class ManageContacts extends StatelessWidget {
       final contacts = currentUserData['contacts'];
       print('contacts: $contacts');
 
-      if (contacts.isEmpty) {
+      if (contacts != null && contacts.isEmpty) {
         return [];
       }
 

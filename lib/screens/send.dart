@@ -24,6 +24,9 @@ class _SendScreenState extends State<SendScreen> {
         .get();
 
     final contacts = currentUserData['contacts'];    
+    if (contacts != null && contacts.isEmpty) {
+      return;
+    }
     print('contacts: $contacts');
 
     final contactsData = await FirebaseFirestore.instance
@@ -52,7 +55,6 @@ class _SendScreenState extends State<SendScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser!;
     Future<void> sendNotification() async {
       if (_selectedContact == null) {
         return;
@@ -73,7 +75,7 @@ class _SendScreenState extends State<SendScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(currentUser.displayName!),
+        title: const Text("Home"),
         actions: [
           IconButton(
             icon: const Icon(Icons.person_add_alt_sharp),
