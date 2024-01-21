@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:inzultz/screens/manage_contacts.dart';
+import 'package:inzultz/screens/manage_requests.dart';
 
 class SendScreen extends StatefulWidget {
   const SendScreen({super.key});
@@ -23,7 +24,7 @@ class _SendScreenState extends State<SendScreen> {
         .doc(currentUser.uid)
         .get();
 
-    final contacts = currentUserData['contacts'];    
+    final contacts = currentUserData['contacts'];
     if (contacts != null && contacts.isEmpty) {
       return;
     }
@@ -67,9 +68,15 @@ class _SendScreenState extends State<SendScreen> {
       print(results.data);
     }
 
-    void addNewContact() async {
+    void manageContacts() async {
       Navigator.of(context).push(MaterialPageRoute(builder: (context) {
         return const ManageContacts();
+      }));
+    }
+
+    void manageRequests() async {
+      Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+        return const ManageRequests();
       }));
     }
 
@@ -78,8 +85,12 @@ class _SendScreenState extends State<SendScreen> {
         title: const Text("Home"),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_add_alt_sharp),
-            onPressed: addNewContact,
+            onPressed: manageRequests,
+            icon: const Icon(Icons.contact_mail),
+          ),
+          IconButton(
+            icon: const Icon(Icons.manage_accounts_rounded),
+            onPressed: manageContacts,
           ),
           IconButton(
             icon: const Icon(Icons.logout),
