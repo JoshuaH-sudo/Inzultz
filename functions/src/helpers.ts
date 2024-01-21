@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import * as logger from "firebase-functions/logger";
 import admin = require("firebase-admin");
-import { Response } from "firebase-functions/v1";
 import { Request } from "firebase-functions/v2/https";
 
 export const findUserByNumber = async (phoneNumber: string) => {
