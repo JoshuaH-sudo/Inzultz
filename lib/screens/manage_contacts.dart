@@ -17,10 +17,11 @@ class ManageContacts extends StatelessWidget {
     }
 
     Future<List<Contact>> getContacts(currentUserData) async {
-      final contacts = currentUserData['contacts'];
+      print('currentUserData: $currentUserData');
+      final contacts = currentUserData?['contacts'] ?? [];
       print('contacts: $contacts');
 
-      if (contacts != null && contacts.isEmpty) {
+      if (contacts.isEmpty) {
         return [];
       }
 
@@ -56,6 +57,7 @@ class ManageContacts extends StatelessWidget {
           .update({'contacts': contacts});
     }
 
+    final currentAuthUser = FirebaseAuth.instance.currentUser!;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage Contacts'),
@@ -68,10 +70,8 @@ class ManageContacts extends StatelessWidget {
       ),
       body: StreamBuilder(
           stream: FirebaseFirestore.instance
-              .collection('users')
-              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .doc('users/${currentAuthUser.uid}')
               .snapshots(),
-          initialData: const [],
           builder: (context, currentUserSnapshot) {
             if (currentUserSnapshot.connectionState ==
                 ConnectionState.waiting) {
@@ -89,8 +89,20 @@ class ManageContacts extends StatelessWidget {
               );
             }
 
+            if (!!currentUserSnapshot.hasData) {
+              return const Center(
+                child: Text(
+                  'No contacts found',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 20,
+                  ),
+                ),
+              );
+            }
+
             return FutureBuilder(
-                future: getContacts(currentUserSnapshot.data),
+                future: getContacts(currentUserSnapshot.data?.data()),
                 builder: (context, contactsSnapshot) {
                   if (contactsSnapshot.connectionState ==
                       ConnectionState.waiting) {
