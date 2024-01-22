@@ -105,7 +105,7 @@ class ManageRequests extends StatelessWidget {
                               await FirebaseFirestore.instance
                                   .doc("users/${currentUser.uid}")
                                   .collection("contact_requests")
-                                  .doc(request["id"])
+                                  .doc(request.id)
                                   .delete();
                             },
                           ),
