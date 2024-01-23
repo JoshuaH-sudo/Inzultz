@@ -22,7 +22,7 @@ class ManageRequests extends StatelessWidget {
       List<Contact> contactInformation = [];
       for (var element in contactRequests) {
         final contactDoc =
-            await FirebaseFirestore.instance.doc('users/${element.to}').get();
+            await FirebaseFirestore.instance.doc('users/${element.from}').get();
         final contactData = contactDoc.data();
         print('contactData: $contactData');
         contactInformation.add(Contact(
@@ -48,8 +48,16 @@ class ManageRequests extends StatelessWidget {
       ),
       body: StreamBuilder(
           stream: FirebaseFirestore.instance
-              .doc("users/${currentUser.uid}")
-              .collection("contact_requests")
+              .collectionGroup("contact_requests")
+              .where(
+                Filter.and(
+                  Filter.or(
+                    Filter("from", isEqualTo: currentUser.uid),
+                    Filter("to", isEqualTo: currentUser.uid),
+                  ),
+                  Filter("status", isEqualTo: "pending"),
+                ),
+              )
               .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -85,7 +93,7 @@ class ManageRequests extends StatelessWidget {
                   final contactInformation = snapshot.data ?? [];
                   if (contactInformation.isEmpty) {
                     return const Center(
-                      child: Text('No requests'),
+                      child: Text('No requests information'),
                     );
                   }
 
@@ -96,20 +104,70 @@ class ManageRequests extends StatelessWidget {
                       itemBuilder: (context, index) {
                         final contact = contactInformation[index];
                         final request = requestDocs[index];
+                        final data = requestsData[index];
                         return ListTile(
-                          title: Text(contact.name),
-                          subtitle: Text(contact.phoneNumber),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete),
-                            onPressed: () async {
-                              await FirebaseFirestore.instance
-                                  .doc("users/${currentUser.uid}")
-                                  .collection("contact_requests")
-                                  .doc(request.id)
-                                  .delete();
-                            },
-                          ),
-                        );
+                            title: Text(contact.name),
+                            subtitle: Text(contact.phoneNumber),
+                            leading: data.to == currentUser.uid
+                                ? const Icon(Icons.call_received_rounded)
+                                : const Icon(Icons.call_made_rounded),
+                            trailing: data.to == currentUser.uid
+                                ? PopupMenuButton<String>(
+                                    itemBuilder: (BuildContext context) {
+                                      return <PopupMenuEntry<String>>[
+                                        PopupMenuItem<String>(
+                                          value: 'decline',
+                                          child: Directionality(
+                                            textDirection: TextDirection.rtl,
+                                            child: TextButton.icon(
+                                              label: const Text('decline'),
+                                              icon: const Icon(Icons.delete),
+                                              style: TextButton.styleFrom(
+                                                iconColor: Colors.red,
+                                              ),
+                                              onPressed: () async {
+                                                await FirebaseFirestore.instance
+                                                    .doc(
+                                                        "users/${currentUser.uid}")
+                                                    .collection(
+                                                        "contact_requests")
+                                                    .doc(request.id)
+                                                    .update(
+                                                        {"status": "declined"});
+                                              },
+                                            ),
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: "accept",
+                                          child: Directionality(
+                                            textDirection: TextDirection.rtl,
+                                            child: TextButton.icon(
+                                              label: const Text("Accept"),
+                                              icon: const Icon(
+                                                Icons.check,
+                                              ),
+                                              onPressed: () async {
+                                                await FirebaseFirestore.instance
+                                                    .doc(
+                                                        "users/${currentUser.uid}")
+                                                    .collection(
+                                                        "contact_requests")
+                                                    .doc(request.id)
+                                                    .update(
+                                                        {"status": "accepted"});
+                                              },
+                                            ),
+                                          ),
+                                        )
+                                      ];
+                                    },
+                                    onSelected: (String value) {
+                                      // Handle dropdown item selection here
+                                      print('Selected: $value');
+                                    },
+                                  )
+                                : null);
                       });
                 });
           }),
