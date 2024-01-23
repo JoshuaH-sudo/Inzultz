@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inzultz/models/contact.dart';
@@ -38,13 +39,10 @@ class ManageRequests extends StatelessWidget {
 
     acceptRequest(String id) async {
       try {
-        final contactRequest = await FirebaseFirestore.instance
-            .collectionGroup("contact_requests")
-            .get();
-        contactRequest.docs
-            .firstWhere((element) => element.id == id)
-            .reference
-            .update({"status": "accepted"});
+        FirebaseFunctions.instance.httpsCallable('updateContactRequestStatus')({
+          "contactRequestId": id,
+          "newStatus": "accepted"
+        });
       } catch (e) {
         print(e);
       }
@@ -52,13 +50,10 @@ class ManageRequests extends StatelessWidget {
 
     declineRequest(String id) async {
       try {
-        final contactRequest = await FirebaseFirestore.instance
-            .collectionGroup("contact_requests")
-            .get();
-        contactRequest.docs
-            .firstWhere((element) => element.id == id)
-            .reference
-            .update({"status": "declined"});
+        FirebaseFunctions.instance.httpsCallable('updateContactRequestStatus')({
+          "contactRequestId": id,
+          "newStatus": "declined"
+        });
       } catch (e) {
         print(e);
       }

@@ -138,96 +138,101 @@ export const sendContactRequest = onRequest(async (request, response) => {
   response.json({ data: { ok: true, message: "Request sent." } });
 });
 
-export const updateContactRequestStatus = onRequest(async (request, response) => {
-  const user = await validate(request);
- if (!user) {
-    response.json({ data: { ok: false, error: "Unauthorized user" } });
-    return;
-  }
+export const updateContactRequestStatus = onRequest(
+  async (request, response) => {
+    const user = await validate(request);
+    if (!user) {
+      response.json({ data: { ok: false, error: "Unauthorized user" } });
+      return;
+    }
 
-  // Validate request body
-  const { contactRequestId, newStatus } = request.body.data;
-  if (contactRequestId === undefined) {
-    logger.error("contactRequestId is undefined");
-    response.json({
-      data: { ok: false, error: "contactRequestId is undefined" },
+    // Validate request body
+    const { contactRequestId, newStatus } = request.body.data;
+    if (contactRequestId === undefined) {
+      logger.error("contactRequestId is undefined");
+      response.json({
+        data: { ok: false, error: "contactRequestId is undefined" },
+      });
+      return;
+    }
+
+    if (newStatus === undefined) {
+      logger.error("newStatus is undefined");
+      response.json({
+        data: { ok: false, error: "newStatus is undefined" },
+      });
+      return;
+    }
+    if (newStatus !== "accepted" && newStatus !== "declined") {
+      logger.error("newStatus is invalid");
+      response.json({
+        data: { ok: false, error: "newStatus is invalid" },
+      });
+      return;
+    }
+
+    // Get the contact request doc
+    const contactRequestDoc = await admin
+      .firestore()
+      .collectionGroup("contact_requests")
+      .get();
+    const contactRequest = contactRequestDoc.docs
+      .find((doc) => doc.id === contactRequestId)
+      ?.data();
+
+    if (!contactRequest) {
+      logger.error("Contact request not found");
+      response.json({
+        data: { ok: false, error: "Contact request not found" },
+      });
+      return;
+    }
+
+    const requestingUserDoc = await admin
+      .firestore()
+      .doc(`users/${contactRequest.from}`)
+      .get();
+    const requestingUser = requestingUserDoc.data();
+
+    if (!requestingUser) {
+      logger.error("Requesting user not found");
+      response.json({
+        data: { ok: false, error: "Requesting user not found" },
+      });
+      return;
+    }
+
+    // Update the contact request status to accepted
+    await admin
+      .firestore()
+      .doc(`users/${contactRequest.from}`)
+      .collection("contact_requests")
+      .doc(contactRequestId)
+      .update({ status: newStatus });
+
+    // Add the new contact to the user's contacts
+    await admin
+      .firestore()
+      .doc(`users/${contactRequest.from}`)
+      .update({
+        contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.to),
+      });
+
+    // Add the user to the new contact's contacts
+    await admin
+      .firestore()
+      .doc(`users/${contactRequest.to}`)
+      .update({
+        contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.from),
+      });
+
+    const { name } = user;
+    await admin.messaging().send({
+      token: requestingUser.FCMToken,
+      notification: {
+        title: "Contact request accepted",
+        body: `${name} ${newStatus} your contact request`,
+      },
     });
-    return;
   }
-
-  if (newStatus === undefined) {
-    logger.error("newStatus is undefined");
-    response.json({
-      data: { ok: false, error: "newStatus is undefined" },
-    });
-    return;
-  }
-  if (newStatus !== "accepted" && newStatus !== "declined") {
-    logger.error("newStatus is invalid");
-    response.json({
-      data: { ok: false, error: "newStatus is invalid" },
-    });
-    return;
-  }
-
-  // Get the contact request doc
-  const contactRequestDoc = await admin
-    .firestore()
-    .collectionGroup("contact_requests")
-    .get();
-  const contactRequest = contactRequestDoc.docs.find(
-    (doc) => doc.id === contactRequestId
-  )?.data();
-
-  if (!contactRequest) {
-    logger.error("Contact request not found");
-    response.json({ data: { ok: false, error: "Contact request not found" } });
-    return;
-  }
-
-  const requestingUserDoc = await admin
-    .firestore()
-    .doc(`users/${contactRequest.from}`)
-    .get();
-  const requestingUser = requestingUserDoc.data();
-
-  if (!requestingUser) {
-    logger.error("Requesting user not found");
-    response.json({ data: { ok: false, error: "Requesting user not found" } });
-    return;
-  }
-
-  // Update the contact request status to accepted
-  await admin
-    .firestore()
-    .doc(`users/${contactRequest.from}`)
-    .collection("contact_requests")
-    .doc(contactRequestId)
-    .update({ status: newStatus });
-
-  // Add the new contact to the user's contacts
-  await admin
-    .firestore()
-    .doc(`users/${contactRequest.from}`)
-    .update({
-      contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.to),
-    });
-
-  // Add the user to the new contact's contacts
-  await admin
-    .firestore()
-    .doc(`users/${contactRequest.to}`)
-    .update({
-      contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.from),
-    });
-
-
-  const { name } = user;
-  await admin.messaging().send({
-    token: requestingUser.FCMToken,
-    notification: {
-      title: `Contact request accepted`,
-      body: `${name} ${newStatus} your contact request`,
-    },
-  });
-})
+);
