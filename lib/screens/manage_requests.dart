@@ -36,6 +36,34 @@ class ManageRequests extends StatelessWidget {
       return contactInformation.toList();
     }
 
+    acceptRequest(String id) async {
+      try {
+        final contactRequest = await FirebaseFirestore.instance
+            .collectionGroup("contact_requests")
+            .get();
+        contactRequest.docs
+            .firstWhere((element) => element.id == id)
+            .reference
+            .update({"status": "accepted"});
+      } catch (e) {
+        print(e);
+      }
+    }
+
+    declineRequest(String id) async {
+      try {
+        final contactRequest = await FirebaseFirestore.instance
+            .collectionGroup("contact_requests")
+            .get();
+        contactRequest.docs
+            .firstWhere((element) => element.id == id)
+            .reference
+            .update({"status": "declined"});
+      } catch (e) {
+        print(e);
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Requests Sent'),
@@ -125,16 +153,8 @@ class ManageRequests extends StatelessWidget {
                                               style: TextButton.styleFrom(
                                                 iconColor: Colors.red,
                                               ),
-                                              onPressed: () async {
-                                                await FirebaseFirestore.instance
-                                                    .doc(
-                                                        "users/${currentUser.uid}")
-                                                    .collection(
-                                                        "contact_requests")
-                                                    .doc(request.id)
-                                                    .update(
-                                                        {"status": "declined"});
-                                              },
+                                              onPressed: () =>
+                                                  declineRequest(request.id),
                                             ),
                                           ),
                                         ),
@@ -147,16 +167,8 @@ class ManageRequests extends StatelessWidget {
                                               icon: const Icon(
                                                 Icons.check,
                                               ),
-                                              onPressed: () async {
-                                                await FirebaseFirestore.instance
-                                                    .doc(
-                                                        "users/${currentUser.uid}")
-                                                    .collection(
-                                                        "contact_requests")
-                                                    .doc(request.id)
-                                                    .update(
-                                                        {"status": "accepted"});
-                                              },
+                                              onPressed: () =>
+                                                  acceptRequest(request.id),
                                             ),
                                           ),
                                         )
