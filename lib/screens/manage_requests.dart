@@ -6,8 +6,6 @@ import 'package:inzultz/models/contact.dart';
 import 'package:inzultz/models/contact_request.dart';
 import 'package:inzultz/screens/add_contact.dart';
 
-final currentUser = FirebaseAuth.instance.currentUser!;
-
 class ManageRequests extends StatelessWidget {
   const ManageRequests({super.key});
 
@@ -76,8 +74,8 @@ class ManageRequests extends StatelessWidget {
               .where(
                 Filter.and(
                   Filter.or(
-                    Filter("from", isEqualTo: currentUser.uid),
-                    Filter("to", isEqualTo: currentUser.uid),
+                    Filter("from", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
+                    Filter("to", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
                   ),
                   Filter("status", isEqualTo: "pending"),
                 ),
@@ -132,10 +130,10 @@ class ManageRequests extends StatelessWidget {
                         return ListTile(
                             title: Text(contact.name),
                             subtitle: Text(contact.phoneNumber),
-                            leading: data.to == currentUser.uid
+                            leading: data.to == FirebaseAuth.instance.currentUser!.uid
                                 ? const Icon(Icons.call_received_rounded)
                                 : const Icon(Icons.call_made_rounded),
-                            trailing: data.to == currentUser.uid
+                            trailing: data.to == FirebaseAuth.instance.currentUser!.uid
                                 ? PopupMenuButton<String>(
                                     itemBuilder: (BuildContext context) {
                                       return <PopupMenuEntry<String>>[
