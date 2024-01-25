@@ -19,6 +19,7 @@ class ManageRequests extends StatelessWidget {
       }));
     }
 
+    // Need a better way at mapping the contact requests to the contact information
     getContactInformation(List<ContactRequest> contactRequests) async {
       List<Contact> contactInformation = [];
       for (var element in contactRequests) {
