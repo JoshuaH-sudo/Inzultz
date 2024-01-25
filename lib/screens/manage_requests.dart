@@ -71,15 +71,15 @@ class ManageRequests extends StatelessWidget {
       body: StreamBuilder(
           stream: FirebaseFirestore.instance
               .collectionGroup("contact_requests")
-              .where(
-                Filter.and(
-                  Filter.or(
-                    Filter("from", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
-                    Filter("to", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
-                  ),
-                  Filter("status", isEqualTo: "pending"),
-                ),
-              )
+              // .where(
+              //   Filter.and(
+              //     Filter.or(
+              //       Filter("from", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
+              //       Filter("to", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
+              //     ),
+              //     Filter("status", isEqualTo: "pending"),
+              //   ),
+              // )
               .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
