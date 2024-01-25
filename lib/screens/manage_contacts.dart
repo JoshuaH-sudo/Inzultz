@@ -5,6 +5,8 @@ import 'package:inzultz/screens/add_contact.dart';
 
 import '../models/contact.dart';
 
+var currentAuthUser = FirebaseAuth.instance.currentUser!;
+
 class ManageContacts extends StatelessWidget {
   const ManageContacts({super.key});
 
@@ -42,10 +44,9 @@ class ManageContacts extends StatelessWidget {
     }
 
     Future<void> removeContact(String id) async {
-      final currentUser = FirebaseAuth.instance.currentUser!;
       final currentUserData = await FirebaseFirestore.instance
           .collection('users')
-          .doc(currentUser.uid)
+          .doc(currentAuthUser.uid)
           .get();
 
       final contacts = currentUserData['contacts'];
@@ -53,11 +54,10 @@ class ManageContacts extends StatelessWidget {
 
       await FirebaseFirestore.instance
           .collection('users')
-          .doc(currentUser.uid)
+          .doc(currentAuthUser.uid)
           .update({'contacts': contacts});
     }
 
-    final currentAuthUser = FirebaseAuth.instance.currentUser!;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage Contacts'),
@@ -82,14 +82,17 @@ class ManageContacts extends StatelessWidget {
             if (currentUserSnapshot.hasError) {
               print('CurrentUserSnapshot Error: ${currentUserSnapshot.error}');
               return const Center(
-                child: Text('An error occurred!', style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 20,
-                ),),
+                child: Text(
+                  'An error occurred!',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 20,
+                  ),
+                ),
               );
             }
 
-            if (!!currentUserSnapshot.hasData) {
+            if (!currentUserSnapshot.hasData) {
               return const Center(
                 child: Text(
                   'No contacts found',
@@ -112,10 +115,13 @@ class ManageContacts extends StatelessWidget {
                   if (contactsSnapshot.hasError) {
                     print('contactsSnapshot Error: ${contactsSnapshot.error}');
                     return const Center(
-                      child: Text('An error occurred!', style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 20,
-                      ),),
+                      child: Text(
+                        'An error occurred!',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 20,
+                        ),
+                      ),
                     );
                   }
 
@@ -139,7 +145,7 @@ class ManageContacts extends StatelessWidget {
                       if (contactsSnapshot.data!.isEmpty) {
                         return const Center(
                           child: Text(
-                            'No contacts found',
+                            'No contacts information found',
                             style: TextStyle(
                               color: Colors.black,
                               fontSize: 20,
