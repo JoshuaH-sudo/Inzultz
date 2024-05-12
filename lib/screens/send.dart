@@ -5,7 +5,9 @@ import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:inzultz/screens/manage_contacts.dart';
 import 'package:inzultz/screens/manage_requests.dart';
+import 'package:logging/logging.dart';
 
+final log = Logger('SendScreen');
 class SendScreen extends StatefulWidget {
   const SendScreen({super.key});
 
@@ -28,13 +30,13 @@ class _SendScreenState extends State<SendScreen> {
     if (contacts != null && contacts.isEmpty) {
       return;
     }
-    print('contacts: $contacts');
+    log.info('contacts: $contacts');
 
     final contactsData = await FirebaseFirestore.instance
         .collection('users')
         .where('uid', whereIn: contacts)
         .get();
-    print('contactsData: ${contactsData.docs}');
+    log.info('contactsData: ${contactsData.docs}');
 
     setState(() {
       _contacts = contactsData.docs.map((doc) {
@@ -65,7 +67,7 @@ class _SendScreenState extends State<SendScreen> {
           .httpsCallable('sendNotification')
           .call({"FCMToken": _selectedContact!.FCMToken});
 
-      print(results.data);
+      log.info(results.data);
     }
 
     void manageContacts() async {
