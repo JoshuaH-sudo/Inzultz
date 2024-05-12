@@ -22,20 +22,28 @@ class ManageRequests extends StatelessWidget {
     // Need a better way at mapping the contact requests to the contact information
     getContactInformation(List<ContactRequest> contactRequests) async {
       List<Contact> contactInformation = [];
+
       for (var element in contactRequests) {
+        try {
         final contactDoc =
             await FirebaseFirestore.instance.doc('users/${element.from}').get();
+
         final contactData = contactDoc.data();
         log.info('contactData: $contactData');
+
         contactInformation.add(Contact(
-          id: contactData!["uid"],
+          id: contactData!["id"],
           name: contactData["name"],
           FCMToken: contactData['FCMToken'],
           phoneNumber: contactData['phoneNumber'],
         ));
+        } catch (e) {
+          log.severe(e);
+        }
       }
 
-      return contactInformation.toList();
+      log.info('contactInformation: $contactInformation');
+      return contactInformation;
     }
 
     acceptRequest(String id) async {
@@ -73,46 +81,59 @@ class ManageRequests extends StatelessWidget {
       body: StreamBuilder(
           stream: FirebaseFirestore.instance
               .collectionGroup("contact_requests")
-              // .where(
-              //   Filter.and(
-              //     Filter.or(
-              //       Filter("from", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
-              //       Filter("to", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
-              //     ),
-              //     Filter("status", isEqualTo: "pending"),
-              //   ),
-              // )
-              .snapshots(),
+              .where(
+                Filter.and(
+                  Filter.or(
+                    Filter("from", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
+                    Filter("to", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
+                  ),
+                  Filter("status", isEqualTo: "pending"),
+                ),
+              ).snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
             }
-
-            final requestDocs = snapshot.data?.docs ?? [];
-            final requestsData = requestDocs
-                .map((e) => ContactRequest(
-                      from: e["from"],
-                      to: e["to"],
-                      status: e["status"],
-                    ))
-                .toList();
-            if (requestsData.isEmpty) {
+            
+            if (snapshot.hasError) {
+              log.severe(snapshot.error);
               return const Center(
-                child: Text('No requests'),
+                child: Text('An error occurred'),
+              );
+            }
+            if (!snapshot.hasData) {
+              return const Center(
+                child: Text('No data'),
               );
             }
 
-            log.info('requests: $requestsData');
+            final requestDocs = snapshot.data?.docs ?? [];
+            List<ContactRequest> requestsData = [];
+            for (var doc in requestDocs) {
+              final data = doc.data();
+              log.info('data: $data');
+              requestsData.add(
+                ContactRequest(
+                  from: data["from"],
+                  to: data["to"],
+                  status: data["status"],
+                ),
+              );
+            }
+                
+            log.info('requests: ${requestsData.toList()}');
             return FutureBuilder(
-                future: getContactInformation(requestsData),
+                future: getContactInformation(requestsData.toList()),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
                       child: CircularProgressIndicator(),
                     );
                   }
+
+                  log.info('snapshot: ${snapshot.data}');
 
                   final contactInformation = snapshot.data ?? [];
                   if (contactInformation.isEmpty) {
@@ -121,7 +142,7 @@ class ManageRequests extends StatelessWidget {
                     );
                   }
 
-                  print('contactInformation: $contactInformation');
+                  log.info('contactInformation: $contactInformation');
 
                   return ListView.builder(
                       itemCount: contactInformation.length,
