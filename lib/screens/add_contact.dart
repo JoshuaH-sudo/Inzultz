@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -39,12 +40,23 @@ class _AddContactState extends State<AddContact> {
         return showMessage("You cannot add yourself as a contact", isError: true);
       }
 
-      // TODO: Add checks before adding the contact
-      await FirebaseFirestore.instance.collection('request').add({
-        "from": currentUser.uid,
-        "to": _enteredPhoneNumber,
-        "status": "pending",
-      });
+      final response = await FirebaseFunctions.instance
+          .httpsCallable('sendContactRequest')
+          .call({'phoneNumber': _enteredPhoneNumber});
+
+      if (response.data['error'] != null) {
+        print('Error: ${response.data['error']}');
+        showMessage(
+          'Unexpected error occurred, please try again.',
+          isError: true,
+        );
+        return;
+      }
+
+      final foundContacts = await FirebaseFirestore.instance
+          .collection('users')
+          .where("phoneNumber", isEqualTo: _enteredPhoneNumber)
+          .get();
 
       returnToPreviousScreen();
     } catch (error) {
