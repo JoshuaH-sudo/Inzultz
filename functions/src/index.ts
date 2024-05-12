@@ -31,6 +31,9 @@ export const sendNotification = onRequest(async (request, response) => {
       return;
     }
 
+    // TODO: Consider how to safely get the recipient's FCMToken.
+    // Passing it in the request body is does not seem secure.
+
     // Validate request body.
     const FCMToken = request.body.data.FCMToken;
     if (FCMToken === undefined) {
