@@ -173,7 +173,7 @@ export const updateContactRequestStatus = onRequest(
       .collectionGroup("contact_requests")
       .get();
     const contactRequest = contactRequestDoc.docs
-      .find((doc) => doc.id === contactRequestId)
+      .find((doc: any) => doc.id === contactRequestId)
       ?.data();
 
     if (!contactRequest) {
