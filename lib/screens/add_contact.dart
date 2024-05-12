@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:logging/logging.dart';
+
+final log = Logger('AddContactScreen');
 
 class AddContact extends StatefulWidget {
   const AddContact({super.key});
@@ -37,41 +39,17 @@ class _AddContactState extends State<AddContact> {
         return showMessage("You cannot add yourself as a contact", isError: true);
       }
 
-      final response = await FirebaseFunctions.instance
-          .httpsCallable('sendContactRequest')
-          .call({'phoneNumber': _enteredPhoneNumber});
-
-      if (response.data['error'] != null) {
-        print('Error: ${response.data['error']}');
-        showMessage(
-          'Unexpected error occurred, please try again.',
-          isError: true,
-        );
-        return;
-      }
-
-      // final foundContacts = await FirebaseFirestore.instance
-      //     .collection('users')
-      //     .where("phoneNumber", isEqualTo: _enteredPhoneNumber)
-      //     .get();
-
-      // if (foundContacts.docs.isEmpty) {
-      //   return showMessage("No contact found with that phone number", isError: true);
-      // }
-      // final foundContact = foundContacts.docs.first;
-
-      // final currentUserId = FirebaseAuth.instance.currentUser!.uid;
-      // await FirebaseFirestore.instance
-      //     .collection('request')
-      //     .doc(currentUserId)
-      //     .update({
-      //   "contacts": FieldValue.arrayUnion([foundContact.id])
-      // });
+      // TODO: Add checks before adding the contact
+      await FirebaseFirestore.instance.collection('request').add({
+        "from": currentUser.uid,
+        "to": _enteredPhoneNumber,
+        "status": "pending",
+      });
 
       returnToPreviousScreen();
     } catch (error) {
       showMessage("Something went wrong", isError: true);
-      print(error);
+      log.severe(error);
     }
   }
 

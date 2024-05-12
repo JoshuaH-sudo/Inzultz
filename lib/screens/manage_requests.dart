@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:inzultz/models/contact_request.dart';
 import 'package:inzultz/screens/add_contact.dart';
+import 'package:logging/logging.dart';
 
+final log = Logger('ManageRequestsScreen');
 class ManageRequests extends StatelessWidget {
   const ManageRequests({super.key});
 
@@ -24,7 +26,7 @@ class ManageRequests extends StatelessWidget {
         final contactDoc =
             await FirebaseFirestore.instance.doc('users/${element.from}').get();
         final contactData = contactDoc.data();
-        print('contactData: $contactData');
+        log.info('contactData: $contactData');
         contactInformation.add(Contact(
           id: contactData!["uid"],
           name: contactData["name"],
@@ -43,7 +45,7 @@ class ManageRequests extends StatelessWidget {
           "newStatus": "accepted"
         });
       } catch (e) {
-        print(e);
+        log.severe(e);
       }
     }
 
@@ -54,7 +56,7 @@ class ManageRequests extends StatelessWidget {
           "newStatus": "declined"
         });
       } catch (e) {
-        print(e);
+        log.severe(e);
       }
     }
 
@@ -102,7 +104,7 @@ class ManageRequests extends StatelessWidget {
               );
             }
 
-            print('requests: $requestsData');
+            log.info('requests: $requestsData');
             return FutureBuilder(
                 future: getContactInformation(requestsData),
                 builder: (context, snapshot) {
