@@ -106,11 +106,11 @@ export const sendContactRequest = onRequest(async (request, response) => {
   // Create a request
   const newContactRequestDoc = await admin
     .firestore()
-    .doc(`users/${user.uid}`)
+    .doc(`users/${user.id}`)
     .collection("contact_requests")
     .add({
-      from: user.uid,
-      to: newContactUser.uid,
+      from: user.id,
+      to: newContactUser.id,
       status: "pending",
     });
 

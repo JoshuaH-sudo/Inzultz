@@ -41,5 +41,7 @@ export const validate = async (request: Request) => {
     await admin.firestore().doc(`users/${requestUserUid}`).get()
   ).data();
 
+  logger.info("User data", { structuredData: true, requestUserData });
+
   return requestUserData;
 };
