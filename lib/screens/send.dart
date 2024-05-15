@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:inzultz/screens/manage_contacts.dart';
+import 'package:inzultz/screens/manage_requests.dart';
+import 'package:logging/logging.dart';
 
+final log = Logger('SendScreen');
 class SendScreen extends StatefulWidget {
   const SendScreen({super.key});
 
@@ -15,6 +18,7 @@ class SendScreen extends StatefulWidget {
 class _SendScreenState extends State<SendScreen> {
   List<Contact> _contacts = [];
   Contact? _selectedContact;
+  final loginUser = FirebaseAuth.instance.currentUser!;
 
   void getContacts() async {
     final currentUser = FirebaseAuth.instance.currentUser!;
@@ -23,14 +27,17 @@ class _SendScreenState extends State<SendScreen> {
         .doc(currentUser.uid)
         .get();
 
-    final contacts = currentUserData['contacts'];    
-    print('contacts: $contacts');
+    final contacts = currentUserData['contacts'];
+    if (contacts != null && contacts.isEmpty) {
+      return;
+    }
+    log.info('contacts: $contacts');
 
     final contactsData = await FirebaseFirestore.instance
         .collection('users')
         .where('uid', whereIn: contacts)
         .get();
-    print('contactsData: ${contactsData.docs}');
+    log.info('contactsData: ${contactsData.docs}');
 
     setState(() {
       _contacts = contactsData.docs.map((doc) {
@@ -52,7 +59,6 @@ class _SendScreenState extends State<SendScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser!;
     Future<void> sendNotification() async {
       if (_selectedContact == null) {
         return;
@@ -62,22 +68,32 @@ class _SendScreenState extends State<SendScreen> {
           .httpsCallable('sendNotification')
           .call({"FCMToken": _selectedContact!.FCMToken});
 
-      print(results.data);
+      log.info(results.data);
     }
 
-    void addNewContact() async {
+    void manageContacts() async {
       Navigator.of(context).push(MaterialPageRoute(builder: (context) {
         return const ManageContacts();
       }));
     }
 
+    void manageRequests() async {
+      Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+        return const ManageRequests();
+      }));
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(currentUser.displayName!),
+        title: Text("Home ${loginUser.phoneNumber}"),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_add_alt_sharp),
-            onPressed: addNewContact,
+            onPressed: manageRequests,
+            icon: const Icon(Icons.contact_mail),
+          ),
+          IconButton(
+            icon: const Icon(Icons.manage_accounts_rounded),
+            onPressed: manageContacts,
           ),
           IconButton(
             icon: const Icon(Icons.logout),

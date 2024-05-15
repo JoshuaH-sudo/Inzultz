@@ -5,6 +5,8 @@ import 'package:inzultz/screens/add_contact.dart';
 
 import '../models/contact.dart';
 
+var currentAuthUser = FirebaseAuth.instance.currentUser!;
+
 class ManageContacts extends StatelessWidget {
   const ManageContacts({super.key});
 
@@ -17,7 +19,8 @@ class ManageContacts extends StatelessWidget {
     }
 
     Future<List<Contact>> getContacts(currentUserData) async {
-      final contacts = currentUserData['contacts'];
+      print('currentUserData: $currentUserData');
+      final contacts = currentUserData?['contacts'] ?? [];
       print('contacts: $contacts');
 
       if (contacts.isEmpty) {
@@ -41,10 +44,9 @@ class ManageContacts extends StatelessWidget {
     }
 
     Future<void> removeContact(String id) async {
-      final currentUser = FirebaseAuth.instance.currentUser!;
       final currentUserData = await FirebaseFirestore.instance
           .collection('users')
-          .doc(currentUser.uid)
+          .doc(currentAuthUser.uid)
           .get();
 
       final contacts = currentUserData['contacts'];
@@ -52,7 +54,7 @@ class ManageContacts extends StatelessWidget {
 
       await FirebaseFirestore.instance
           .collection('users')
-          .doc(currentUser.uid)
+          .doc(currentAuthUser.uid)
           .update({'contacts': contacts});
     }
 
@@ -68,10 +70,8 @@ class ManageContacts extends StatelessWidget {
       ),
       body: StreamBuilder(
           stream: FirebaseFirestore.instance
-              .collection('users')
-              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .doc('users/${currentAuthUser.uid}')
               .snapshots(),
-          initialData: const [],
           builder: (context, currentUserSnapshot) {
             if (currentUserSnapshot.connectionState ==
                 ConnectionState.waiting) {
@@ -82,15 +82,30 @@ class ManageContacts extends StatelessWidget {
             if (currentUserSnapshot.hasError) {
               print('CurrentUserSnapshot Error: ${currentUserSnapshot.error}');
               return const Center(
-                child: Text('An error occurred!', style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 20,
-                ),),
+                child: Text(
+                  'An error occurred!',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 20,
+                  ),
+                ),
+              );
+            }
+
+            if (!currentUserSnapshot.hasData) {
+              return const Center(
+                child: Text(
+                  'No contacts found',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 20,
+                  ),
+                ),
               );
             }
 
             return FutureBuilder(
-                future: getContacts(currentUserSnapshot.data),
+                future: getContacts(currentUserSnapshot.data?.data()),
                 builder: (context, contactsSnapshot) {
                   if (contactsSnapshot.connectionState ==
                       ConnectionState.waiting) {
@@ -100,10 +115,13 @@ class ManageContacts extends StatelessWidget {
                   if (contactsSnapshot.hasError) {
                     print('contactsSnapshot Error: ${contactsSnapshot.error}');
                     return const Center(
-                      child: Text('An error occurred!', style: TextStyle(
-                        color: Colors.red,
-                        fontSize: 20,
-                      ),),
+                      child: Text(
+                        'An error occurred!',
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 20,
+                        ),
+                      ),
                     );
                   }
 
@@ -127,7 +145,7 @@ class ManageContacts extends StatelessWidget {
                       if (contactsSnapshot.data!.isEmpty) {
                         return const Center(
                           child: Text(
-                            'No contacts found',
+                            'No contacts information found',
                             style: TextStyle(
                               color: Colors.black,
                               fontSize: 20,
