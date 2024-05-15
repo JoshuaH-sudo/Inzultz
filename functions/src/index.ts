@@ -21,6 +21,7 @@ import {
 } from "./helpers";
 import Joi = require("joi");
 import { updateContactRequestSchema } from "./schemas";
+import { ContactRequest } from "./types";
 
 admin.initializeApp();
 
@@ -153,20 +154,22 @@ export const updateContactRequestStatus = onRequest(
 
     // Validate request body
     const { contactRequestId, newStatus } = request.body.data;
-    const validationREsults = updateContactRequestSchema.validate({
+    const validationResults = updateContactRequestSchema.validate({
       contactRequestId,
       newStatus,
     });
-    if (validationREsults.error) {
-      logger.error(validationREsults.error);
+    if (validationResults.error) {
+      logger.error(validationResults.error);
       response.json({
-        data: { ok: false, error: validationREsults.error.details[0].message },
+        data: { ok: false, error: validationResults.error.details[0].message },
       });
       return;
     }
 
     // Get the contact request doc
-    const contactRequest = await getContactRequests(contactRequestId);
+    const contactRequest = (await getContactRequests(contactRequestId)) as
+      | ContactRequest
+      | undefined;
     if (!contactRequest) {
       logger.error("Contact request not found");
       response.json({
@@ -176,8 +179,8 @@ export const updateContactRequestStatus = onRequest(
     }
 
     // Get the requesting user
-    const requestingUser = await getUser(contactRequest.from);
-    if (!requestingUser) {
+    const sendingUser = await getUser(contactRequest.senderId);
+    if (!sendingUser) {
       logger.error("Requesting user not found");
       response.json({
         data: { ok: false, error: "Requesting user not found" },
@@ -186,7 +189,7 @@ export const updateContactRequestStatus = onRequest(
     }
 
     // Get the receiving user
-    const receivingUser = await getUser(contactRequest.to);
+    const receivingUser = await getUser(contactRequest.receiverId);
     if (!receivingUser) {
       logger.error("Receiving user not found");
       response.json({
@@ -198,7 +201,7 @@ export const updateContactRequestStatus = onRequest(
     // Update the contact request status
     await admin
       .firestore()
-      .doc(`users/${contactRequest.from}`)
+      .doc(`users/${contactRequest.senderId}`)
       .collection("contact_requests")
       .doc(contactRequestId)
       .update({
@@ -217,9 +220,9 @@ export const updateContactRequestStatus = onRequest(
       // to the requesting user
       const receivingUserContactRequestDoc = await admin
         .firestore()
-        .doc(`users/${contactRequest.to}`)
+        .doc(`users/${contactRequest.receiverId}`)
         .collection("contact_requests")
-        .where("from", "==", contactRequest.from)
+        .where("senderId", "==", contactRequest.senderId)
         .get();
 
       const receivingUserContactRequest =
@@ -231,25 +234,29 @@ export const updateContactRequestStatus = onRequest(
         });
       }
 
-      // Add the new contact to the user's contacts
+      // Add the new contact to the sender's contacts
       await admin
         .firestore()
-        .doc(`users/${contactRequest.from}`)
+        .doc(`users/${contactRequest.senderId}`)
         .update({
-          contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.to),
+          contacts: admin.firestore.FieldValue.arrayUnion(
+            contactRequest.receiverId
+          ),
         });
 
-      // Add the user to the receiving contact's contacts
+      // Add the user to the receiver's contacts
       await admin
         .firestore()
-        .doc(`users/${contactRequest.to}`)
+        .doc(`users/${contactRequest.receiverId}`)
         .update({
-          contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.from),
+          contacts: admin.firestore.FieldValue.arrayUnion(
+            contactRequest.senderId
+          ),
         });
 
       // Send a notification to the requesting user
       const { name } = user;
-      const token = requestingUser.FCMToken;
+      const token = sendingUser.FCMToken;
       const title = "Contact request accepted";
       const body = `${name} ${newStatus} your contact request`;
 
