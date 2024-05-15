@@ -1,6 +1,7 @@
 
 export type ContactRequest = {
-  to: string;
-  from: string;
+  senderId: string;
+  receiverId: string;
   status: "pending" | "accepted" | "declined";
+  updateAt: number;
 }

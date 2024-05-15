@@ -117,8 +117,8 @@ export const sendContactRequest = onRequest(async (request, response) => {
     .doc(`users/${user.id}`)
     .collection("contact_requests")
     .add({
-      from: user.id,
-      to: newContactUser.id,
+      senderId: user.id,
+      receiverId: newContactUser.id,
       status: "pending",
       updateAt: admin.firestore.FieldValue.serverTimestamp(),
     });
