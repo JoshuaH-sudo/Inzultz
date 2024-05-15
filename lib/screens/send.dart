@@ -18,6 +18,7 @@ class SendScreen extends StatefulWidget {
 class _SendScreenState extends State<SendScreen> {
   List<Contact> _contacts = [];
   Contact? _selectedContact;
+  final loginUser = FirebaseAuth.instance.currentUser!;
 
   void getContacts() async {
     final currentUser = FirebaseAuth.instance.currentUser!;
@@ -84,7 +85,7 @@ class _SendScreenState extends State<SendScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Home"),
+        title: Text("Home ${loginUser.phoneNumber}"),
         actions: [
           IconButton(
             onPressed: manageRequests,

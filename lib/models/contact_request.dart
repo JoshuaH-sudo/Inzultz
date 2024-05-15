@@ -1,11 +1,11 @@
 class ContactRequest {
-  final String from;
-  final String to;
+  final String senderId;
+  final String receiverId;
   final String status;
 
   ContactRequest({
-    required this.from,
-    required this.to,
+    required this.senderId,
+    required this.receiverId,
     required this.status,
   });
 }

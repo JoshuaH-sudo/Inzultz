@@ -26,7 +26,7 @@ class ManageRequests extends StatelessWidget {
       for (var element in contactRequests) {
         try {
         final contactDoc =
-            await FirebaseFirestore.instance.doc('users/${element.from}').get();
+            await FirebaseFirestore.instance.doc('users/${element.senderId}').get();
 
         final contactData = contactDoc.data();
         log.info('contactData: $contactData');
@@ -84,8 +84,8 @@ class ManageRequests extends StatelessWidget {
               .where(
                 Filter.and(
                   Filter.or(
-                    Filter("from", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
-                    Filter("to", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
+                    Filter("senderId", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
+                    Filter("receiverId", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
                   ),
                   Filter("status", isEqualTo: "pending"),
                 ),
@@ -116,8 +116,8 @@ class ManageRequests extends StatelessWidget {
               log.info('data: $data');
               requestsData.add(
                 ContactRequest(
-                  from: data["from"],
-                  to: data["to"],
+                  senderId: data["senderId"],
+                  receiverId: data["receiverId"],
                   status: data["status"],
                 ),
               );
@@ -153,10 +153,10 @@ class ManageRequests extends StatelessWidget {
                         return ListTile(
                             title: Text(contact.name),
                             subtitle: Text(contact.phoneNumber),
-                            leading: data.to == FirebaseAuth.instance.currentUser!.uid
+                            leading: data.receiverId == FirebaseAuth.instance.currentUser!.uid
                                 ? const Icon(Icons.call_received_rounded)
                                 : const Icon(Icons.call_made_rounded),
-                            trailing: data.to == FirebaseAuth.instance.currentUser!.uid
+                            trailing: data.receiverId == FirebaseAuth.instance.currentUser!.uid
                                 ? PopupMenuButton<String>(
                                     itemBuilder: (BuildContext context) {
                                       return <PopupMenuEntry<String>>[
