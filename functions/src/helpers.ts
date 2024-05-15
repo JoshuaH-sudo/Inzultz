@@ -51,13 +51,17 @@ export const sendAppNotification = async (
   title: string,
   body: string
 ) => {
-  await admin.messaging().send({
-    token: FCMToken,
-    notification: {
-      title,
-      body,
-    },
-  });
+  try {
+    await admin.messaging().send({
+      token: FCMToken,
+      notification: {
+        title,
+        body,
+      },
+    });
+  } catch (error) {
+    logger.error(error);
+  }
 };
 
 export const getContactRequests = async (contactRequestId: string) => {

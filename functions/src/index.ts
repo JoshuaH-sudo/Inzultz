@@ -19,7 +19,6 @@ import {
   sendAppNotification,
   validate,
 } from "./helpers";
-import Joi = require("joi");
 import { updateContactRequestSchema } from "./schemas";
 import { ContactRequest } from "./types";
 
@@ -126,13 +125,10 @@ export const sendContactRequest = onRequest(async (request, response) => {
 
   // Send a notification to the new contact user
   const { name } = user;
-  await admin.messaging().send({
-    token: newContactUser.FCMToken,
-    notification: {
-      title: `Contact request from ${name}`,
-      body: `${name} wants to add you to their contacts`,
-    },
-  });
+  const token = newContactUser.FCMToken;
+  const title = `Contact request from ${name}`;
+  const body = `${name} wants to add you to their contacts`;
+  await sendAppNotification(token, title, body);
 
   logger.info("Contact Request Sent", {
     structuredData: true,
@@ -209,6 +205,24 @@ export const updateContactRequestStatus = onRequest(
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
+    // Check if the receiving user has also made a request
+    // to the requesting user
+    const receivingUserContactRequestDoc = await admin
+      .firestore()
+      .doc(`users/${contactRequest.receiverId}`)
+      .collection("contact_requests")
+      .where("senderId", "==", contactRequest.receiverId)
+      .get();
+
+    const receivingUserContactRequest =
+        receivingUserContactRequestDoc.docs[0];
+    if (receivingUserContactRequest) {
+      receivingUserContactRequest.ref.update({
+        status: newStatus,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+
     // Don't alert the user if the request was declined
     if (newStatus === "declined") {
       response.json({ data: { ok: true, message: "Request declined" } });
@@ -216,24 +230,6 @@ export const updateContactRequestStatus = onRequest(
     }
 
     if (newStatus === "accepted") {
-      // Check if the receiving user has also made a request
-      // to the requesting user
-      const receivingUserContactRequestDoc = await admin
-        .firestore()
-        .doc(`users/${contactRequest.receiverId}`)
-        .collection("contact_requests")
-        .where("senderId", "==", contactRequest.senderId)
-        .get();
-
-      const receivingUserContactRequest =
-        receivingUserContactRequestDoc.docs[0];
-      if (receivingUserContactRequest) {
-        receivingUserContactRequest.ref.update({
-          status: newStatus,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      }
-
       // Add the new contact to the sender's contacts
       await admin
         .firestore()
