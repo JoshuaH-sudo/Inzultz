@@ -120,6 +120,7 @@ export const sendContactRequest = onRequest(async (request, response) => {
       from: user.id,
       to: newContactUser.id,
       status: "pending",
+      updateAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
   // Send a notification to the new contact user
@@ -176,7 +177,6 @@ export const updateContactRequestStatus = onRequest(
 
     // Get the requesting user
     const requestingUser = await getUser(contactRequest.from);
-
     if (!requestingUser) {
       logger.error("Requesting user not found");
       response.json({
@@ -187,7 +187,6 @@ export const updateContactRequestStatus = onRequest(
 
     // Get the receiving user
     const receivingUser = await getUser(contactRequest.to);
-
     if (!receivingUser) {
       logger.error("Receiving user not found");
       response.json({
@@ -196,13 +195,16 @@ export const updateContactRequestStatus = onRequest(
       return;
     }
 
-    // Update the contact request status to accepted
+    // Update the contact request status
     await admin
       .firestore()
       .doc(`users/${contactRequest.from}`)
       .collection("contact_requests")
       .doc(contactRequestId)
-      .update({ status: newStatus });
+      .update({
+        status: newStatus,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
     // Don't alert the user if the request was declined
     if (newStatus === "declined") {
@@ -210,28 +212,48 @@ export const updateContactRequestStatus = onRequest(
       return;
     }
 
-    // Add the new contact to the user's contacts
-    await admin
-      .firestore()
-      .doc(`users/${contactRequest.from}`)
-      .update({
-        contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.to),
-      });
+    if (newStatus === "accepted") {
+      // Check if the receiving user has also made a request
+      // to the requesting user
+      const receivingUserContactRequestDoc = await admin
+        .firestore()
+        .doc(`users/${contactRequest.to}`)
+        .collection("contact_requests")
+        .where("from", "==", contactRequest.from)
+        .get();
 
-    // Add the user to the receiving contact's contacts
-    await admin
-      .firestore()
-      .doc(`users/${contactRequest.to}`)
-      .update({
-        contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.from),
-      });
+      const receivingUserContactRequest =
+        receivingUserContactRequestDoc.docs[0];
+      if (receivingUserContactRequest) {
+        receivingUserContactRequest.ref.update({
+          status: newStatus,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
 
-    // Send a notification to the requesting user
-    const { name } = user;
-    const token = requestingUser.FCMToken;
-    const title = "Contact request accepted";
-    const body = `${name} ${newStatus} your contact request`;
+      // Add the new contact to the user's contacts
+      await admin
+        .firestore()
+        .doc(`users/${contactRequest.from}`)
+        .update({
+          contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.to),
+        });
 
-    await sendAppNotification(token, title, body);
+      // Add the user to the receiving contact's contacts
+      await admin
+        .firestore()
+        .doc(`users/${contactRequest.to}`)
+        .update({
+          contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.from),
+        });
+
+      // Send a notification to the requesting user
+      const { name } = user;
+      const token = requestingUser.FCMToken;
+      const title = "Contact request accepted";
+      const body = `${name} ${newStatus} your contact request`;
+
+      await sendAppNotification(token, title, body);
+    }
   }
 );
