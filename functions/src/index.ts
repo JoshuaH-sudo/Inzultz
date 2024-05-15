@@ -211,18 +211,23 @@ export const updateContactRequestStatus = onRequest(
       .firestore()
       .doc(`users/${contactRequest.receiverId}`)
       .collection("contact_requests")
-      .where("senderId", "==", contactRequest.receiverId)
+      .where("senderId", "==", contactRequest.senderId)
       .get();
 
     const receivingUserContactRequest =
         receivingUserContactRequestDoc.docs[0];
     if (receivingUserContactRequest) {
+      // If user A and B both send requests to each other and
+      // user A accepts user B's request, user A's request
+      // should be updated to "accepted" as well.
+      //
+      // If user A declines user B's request, user A's request
+      // should be updated to "declined" as well
       receivingUserContactRequest.ref.update({
         status: newStatus,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     }
-
     // Don't alert the user if the request was declined
     if (newStatus === "declined") {
       response.json({ data: { ok: true, message: "Request declined" } });
