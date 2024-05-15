@@ -46,7 +46,7 @@ export const validate = async (request: Request) => {
   return requestUserData;
 };
 
-export const sendNotification = async (
+export const sendAppNotification = async (
   FCMToken: string,
   title: string,
   body: string

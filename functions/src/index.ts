@@ -16,6 +16,7 @@ import {
   findUserByNumber,
   getContactRequests,
   getUser,
+  sendAppNotification,
   validate,
 } from "./helpers";
 import Joi = require("joi");
@@ -227,12 +228,10 @@ export const updateContactRequestStatus = onRequest(
 
     // Send a notification to the requesting user
     const { name } = user;
-    await admin.messaging().send({
-      token: requestingUser.FCMToken,
-      notification: {
-        title: "Contact request accepted",
-        body: `${name} ${newStatus} your contact request`,
-      },
-    });
+    const token = requestingUser.FCMToken;
+    const title = "Contact request accepted";
+    const body = `${name} ${newStatus} your contact request`;
+
+    await sendAppNotification(token, title, body);
   }
 );
