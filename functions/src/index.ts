@@ -12,7 +12,14 @@
 import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import admin = require("firebase-admin");
-import { findUserByNumber, validate } from "./helpers";
+import {
+  findUserByNumber,
+  getContactRequests,
+  getUser,
+  validate,
+} from "./helpers";
+import Joi = require("joi");
+import { updateContactRequestSchema } from "./schemas";
 
 admin.initializeApp();
 
@@ -144,38 +151,20 @@ export const updateContactRequestStatus = onRequest(
 
     // Validate request body
     const { contactRequestId, newStatus } = request.body.data;
-    if (contactRequestId === undefined) {
-      logger.error("contactRequestId is undefined");
+    const validationREsults = updateContactRequestSchema.validate({
+      contactRequestId,
+      newStatus,
+    });
+    if (validationREsults.error) {
+      logger.error(validationREsults.error);
       response.json({
-        data: { ok: false, error: "contactRequestId is undefined" },
-      });
-      return;
-    }
-
-    if (newStatus === undefined) {
-      logger.error("newStatus is undefined");
-      response.json({
-        data: { ok: false, error: "newStatus is undefined" },
-      });
-      return;
-    }
-    if (newStatus !== "accepted" && newStatus !== "declined") {
-      logger.error("newStatus is invalid");
-      response.json({
-        data: { ok: false, error: "newStatus is invalid" },
+        data: { ok: false, error: validationREsults.error.details[0].message },
       });
       return;
     }
 
     // Get the contact request doc
-    const contactRequestDoc = await admin
-      .firestore()
-      .collectionGroup("contact_requests")
-      .get();
-    const contactRequest = contactRequestDoc.docs
-      .find((doc: any) => doc.id === contactRequestId)
-      ?.data();
-
+    const contactRequest = await getContactRequests(contactRequestId);
     if (!contactRequest) {
       logger.error("Contact request not found");
       response.json({
@@ -184,16 +173,24 @@ export const updateContactRequestStatus = onRequest(
       return;
     }
 
-    const requestingUserDoc = await admin
-      .firestore()
-      .doc(`users/${contactRequest.from}`)
-      .get();
-    const requestingUser = requestingUserDoc.data();
+    // Get the requesting user
+    const requestingUser = await getUser(contactRequest.from);
 
     if (!requestingUser) {
       logger.error("Requesting user not found");
       response.json({
         data: { ok: false, error: "Requesting user not found" },
+      });
+      return;
+    }
+
+    // Get the receiving user
+    const receivingUser = await getUser(contactRequest.to);
+
+    if (!receivingUser) {
+      logger.error("Receiving user not found");
+      response.json({
+        data: { ok: false, error: "Receiving user not found" },
       });
       return;
     }
@@ -206,6 +203,12 @@ export const updateContactRequestStatus = onRequest(
       .doc(contactRequestId)
       .update({ status: newStatus });
 
+    // Don't alert the user if the request was declined
+    if (newStatus === "declined") {
+      response.json({ data: { ok: true, message: "Request declined" } });
+      return;
+    }
+
     // Add the new contact to the user's contacts
     await admin
       .firestore()
@@ -214,7 +217,7 @@ export const updateContactRequestStatus = onRequest(
         contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.to),
       });
 
-    // Add the user to the new contact's contacts
+    // Add the user to the receiving contact's contacts
     await admin
       .firestore()
       .doc(`users/${contactRequest.to}`)
@@ -222,6 +225,7 @@ export const updateContactRequestStatus = onRequest(
         contacts: admin.firestore.FieldValue.arrayUnion(contactRequest.from),
       });
 
+    // Send a notification to the requesting user
     const { name } = user;
     await admin.messaging().send({
       token: requestingUser.FCMToken,

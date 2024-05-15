@@ -45,3 +45,34 @@ export const validate = async (request: Request) => {
 
   return requestUserData;
 };
+
+export const sendNotification = async (
+  FCMToken: string,
+  title: string,
+  body: string
+) => {
+  await admin.messaging().send({
+    token: FCMToken,
+    notification: {
+      title,
+      body,
+    },
+  });
+};
+
+export const getContactRequests = async (contactRequestId: string) => {
+  const contactRequestDoc = await admin
+    .firestore()
+    .collectionGroup("contact_requests")
+    .get();
+  const contactRequest = contactRequestDoc.docs
+    .find((doc) => doc.id === contactRequestId)
+    ?.data();
+
+  return contactRequest;
+};
+
+export const getUser = async (userId: string) => {
+  const receivingUserDoc = await admin.firestore().doc(`users/${userId}`).get();
+  return receivingUserDoc.data();
+};
