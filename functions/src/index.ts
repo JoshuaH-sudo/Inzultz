@@ -111,6 +111,22 @@ export const sendContactRequest = onRequest(async (request, response) => {
     return;
   }
 
+  // Find if the user has already sent a request to the new contact
+  const contactRequestDoc = await admin
+    .firestore()
+    .doc(`users/${user.id}`)
+    .collection("contact_requests")
+    .where("receiverId", "==", newContactUser.id)
+    .get();
+
+  if (!contactRequestDoc.empty) {
+    logger.error("Request already sent");
+    response.json({
+      data: { ok: false, error: "Request was already sent to this user" },
+    });
+    return;
+  }
+
   // Create a request
   const newContactRequestDoc = await admin
     .firestore()
