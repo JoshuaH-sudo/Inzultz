@@ -2,11 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inzultz/screens/add_contact.dart';
+import 'package:logging/logging.dart';
 
 import '../models/contact.dart';
-
 var currentAuthUser = FirebaseAuth.instance.currentUser!;
 
+final log = Logger('ManageRequestsScreen');
 class ManageContacts extends StatelessWidget {
   const ManageContacts({super.key});
 
@@ -19,9 +20,7 @@ class ManageContacts extends StatelessWidget {
     }
 
     Future<List<Contact>> getContacts(currentUserData) async {
-      print('currentUserData: $currentUserData');
       final contacts = currentUserData?['contacts'] ?? [];
-      print('contacts: $contacts');
 
       if (contacts.isEmpty) {
         return [];
@@ -29,9 +28,9 @@ class ManageContacts extends StatelessWidget {
 
       final contactsData = await FirebaseFirestore.instance
           .collection('users')
-          .where('uid', whereIn: contacts)
+          .where('id', whereIn: contacts)
           .get();
-      print('contactsData: ${contactsData.docs}');
+      log.info('contactsData: ${contactsData.docs}');
 
       return contactsData.docs.map((doc) {
         return Contact(
@@ -80,7 +79,7 @@ class ManageContacts extends StatelessWidget {
               );
             }
             if (currentUserSnapshot.hasError) {
-              print('CurrentUserSnapshot Error: ${currentUserSnapshot.error}');
+              log.info('CurrentUserSnapshot Error: ${currentUserSnapshot.error}');
               return const Center(
                 child: Text(
                   'An error occurred!',
@@ -113,7 +112,7 @@ class ManageContacts extends StatelessWidget {
                   }
 
                   if (contactsSnapshot.hasError) {
-                    print('contactsSnapshot Error: ${contactsSnapshot.error}');
+                    log.info('contactsSnapshot Error: ${contactsSnapshot.error}');
                     return const Center(
                       child: Text(
                         'An error occurred!',
