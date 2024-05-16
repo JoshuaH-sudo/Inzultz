@@ -35,7 +35,6 @@ class _AddContactState extends State<AddContact> {
       if (_enteredPhoneNumber.isEmpty) {
         return showMessage("Please enter a phone number", isError: true);
       }
-
       if (_enteredPhoneNumber == currentUserData['phoneNumber']) {
         return showMessage("You cannot add yourself as a contact", isError: true);
       }
@@ -45,18 +44,13 @@ class _AddContactState extends State<AddContact> {
           .call({'phoneNumber': _enteredPhoneNumber});
 
       if (response.data['error'] != null) {
-        print('Error: ${response.data['error']}');
+        log.severe('Error: ${response.data['error']}');
         showMessage(
-          'Unexpected error occurred, please try again.',
+          response.data['error'],
           isError: true,
         );
         return;
       }
-
-      final foundContacts = await FirebaseFirestore.instance
-          .collection('users')
-          .where("phoneNumber", isEqualTo: _enteredPhoneNumber)
-          .get();
 
       returnToPreviousScreen();
     } catch (error) {
