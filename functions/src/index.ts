@@ -237,7 +237,7 @@ export const updateContactRequestStatus = onRequest(
       .firestore()
       .doc(`users/${contactRequest.receiverId}`)
       .collection("contact_requests")
-      .where("senderId", "==", contactRequest.senderId)
+      .where("receiverId", "==", contactRequest.senderId)
       .get();
 
     const receivingUserContactRequest =
