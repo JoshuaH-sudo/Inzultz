@@ -103,11 +103,21 @@ export const sendContactRequest = onRequest(async (request, response) => {
     response.json({ data: { ok: false, error: "phoneNumber is undefined" } });
     return;
   }
+
   // Get the user from the phone number
   const newContactUser = await findUserByNumber(phoneNumber);
   if (!newContactUser) {
     logger.error("User not found");
     response.json({ data: { ok: false, error: "User not found" } });
+    return;
+  }
+
+  // Check if new user is already in the user's contacts
+  if (user.contacts.includes(newContactUser.id)) {
+    logger.error("User is already in contacts");
+    response.json({
+      data: { ok: false, error: "User is already in contacts" },
+    });
     return;
   }
 
