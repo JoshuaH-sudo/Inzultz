@@ -22,10 +22,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^4.0.0
   riverpod_generator: ^2.3.9
   build_runner: ^2.4.7
-  custom_lint: ^0.5.7
+  custom_lint: ^0.6.4
   riverpod_lint: ^2.3.7
 
 flutter:

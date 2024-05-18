@@ -49,11 +49,11 @@ export const sendNotification = onRequest(async (request, response) => {
     const requestUserDocs = await admin
       .firestore()
       .collection("users")
-      .doc(user.uid)
+      .doc(user.id)
       .get();
     const requestUser = requestUserDocs.data();
     if (!requestUser) {
-      response.json({ data: { ok: false, error: "Unauthorized user" } });
+      response.json({ data: { ok: false, error: "User data does not exist" } });
       return;
     }
 
@@ -61,13 +61,17 @@ export const sendNotification = onRequest(async (request, response) => {
     await admin.messaging().send({
       token: FCMToken,
       notification: {
-        title: `${name} says FUCK YOU!`,
-        body: `Your friend ${name} wanted to express a sincere message`,
+        title: `Your friend ${name}, wanted to express a sincere message`,
+        body: `${name} says FUCK YOU!`,
       },
     });
   } catch (error) {
-    logger.error(error);
-    response.json({ data: { ok: false, error } });
+    logger.error(error, );
+
+    if (error instanceof Error) {
+      response.json({ data: { ok: false, error: error.message } });
+    }
+    response.json({ data: { ok: false, error: "Failed to send FCM message" } });
     return;
   }
 
@@ -240,8 +244,7 @@ export const updateContactRequestStatus = onRequest(
       .where("receiverId", "==", contactRequest.senderId)
       .get();
 
-    const receivingUserContactRequest =
-        receivingUserContactRequestDoc.docs[0];
+    const receivingUserContactRequest = receivingUserContactRequestDoc.docs[0];
     if (receivingUserContactRequest) {
       // If user A and B both send requests to each other and
       // user A accepts user B's request, user A's request

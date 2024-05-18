@@ -5,7 +5,6 @@ import 'package:inzultz/screens/add_contact.dart';
 import 'package:logging/logging.dart';
 
 import '../models/contact.dart';
-var currentAuthUser = FirebaseAuth.instance.currentUser!;
 
 final log = Logger('ManageRequestsScreen');
 class ManageContacts extends StatelessWidget {
@@ -13,6 +12,7 @@ class ManageContacts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var currentAuthUser = FirebaseAuth.instance.currentUser!;
     void addNewContact() async {
       Navigator.of(context).push(MaterialPageRoute(builder: (context) {
         return const AddContact();
