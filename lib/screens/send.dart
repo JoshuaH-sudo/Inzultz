@@ -183,7 +183,8 @@ class SendButton extends StatelessWidget {
     if (selectedContact == null) {
       return;
     }
-
+    log.info("sending notification to ${selectedContact!.FCMToken}");
+    
     final results = await FirebaseFunctions.instance
         .httpsCallable('sendNotification')
         .call({"FCMToken": selectedContact!.FCMToken});

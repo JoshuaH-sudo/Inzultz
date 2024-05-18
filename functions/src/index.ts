@@ -53,7 +53,7 @@ export const sendNotification = onRequest(async (request, response) => {
       .get();
     const requestUser = requestUserDocs.data();
     if (!requestUser) {
-      response.json({ data: { ok: false, error: "Unauthorized user" } });
+      response.json({ data: { ok: false, error: "User data does not exist" } });
       return;
     }
 
@@ -61,12 +61,12 @@ export const sendNotification = onRequest(async (request, response) => {
     await admin.messaging().send({
       token: FCMToken,
       notification: {
-        title: `${name} says FUCK YOU!`,
-        body: `Your friend ${name} wanted to express a sincere message`,
+        title: `Your friend ${name}, wanted to express a sincere message`,
+        body: `${name} says FUCK YOU!`,
       },
     });
   } catch (error) {
-    logger.error(error);
+    logger.error(error, );
 
     if (error instanceof Error) {
       response.json({ data: { ok: false, error: error.message } });

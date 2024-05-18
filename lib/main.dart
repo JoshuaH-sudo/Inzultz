@@ -52,7 +52,14 @@ class MainApp extends StatelessWidget {
       return;
     }
 
-    final token = await currentUser.getIdToken();
+    final fcm = FirebaseMessaging.instance;
+    final notificationSettings = await fcm.requestPermission();
+    if (notificationSettings.authorizationStatus ==
+        AuthorizationStatus.denied) {
+      return;
+    }
+    final token = await fcm.getToken();
+    
     await FirebaseFirestore.instance
         .collection('users')
         .doc(currentUser.uid)
