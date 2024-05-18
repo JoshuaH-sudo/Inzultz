@@ -4,6 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:logging/logging.dart';
+
+final log = Logger('AuthScreen');
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -26,20 +29,20 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _smsCode;
 
   _onSubmit() async {
-    print('Submitting');
+    log.info('Submitting');
     setState(() {
       _isLoading = true;
     });
     final isValid = _formKey.currentState!.validate();
     if (!isValid) {
-      print('Invalid');
+      log.info('Invalid');
       setState(() {
         _isLoading = false;
       });
       return;
     }
     _formKey.currentState!.save();
-    print('Form saved $_enteredPhoneNumber');
+    log.info('Form saved $_enteredPhoneNumber');
 
     if (_isSignup) {
       final response = await FirebaseFunctions.instance
@@ -47,7 +50,7 @@ class _AuthScreenState extends State<AuthScreen> {
           .call({'phoneNumber': _enteredPhoneNumber});
 
       if (response.data['error'] != null) {
-        print('Error: ${response.data['error']}');
+        log.info('Error: ${response.data['error']}');
         _showMessage(
           'Unexpected error occurred, please try again.',
           isError: true,
@@ -59,7 +62,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
 
       if (response.data['isUsed']) {
-        print('Phone number is used');
+        log.info('Phone number is used');
         _showMessage('Phone number is already in use', isError: true);
         setState(() {
           _isLoading = false;
@@ -67,24 +70,24 @@ class _AuthScreenState extends State<AuthScreen> {
         return;
       }
 
-      print('Phone number is not used');
+      log.info('Phone number is not used');
     }
 
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: _enteredPhoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
-        print('Verification completed');
+        log.info('Verification completed');
         await FirebaseAuth.instance.signInWithCredential(credential);
       },
       verificationFailed: (FirebaseAuthException e) {
-        print('Failed to verify phone number: ${e.message}');
+        log.info('Failed to verify phone number: ${e.message}');
         setState(() {
           _isVerifying = false;
           _isLoading = false;
         });
       },
       codeSent: (String verificationId, int? resendToken) {
-        print('Code sent');
+        log.info('Code sent');
         setState(() {
           _isVerifying = true;
           _isLoading = false;
@@ -123,14 +126,14 @@ class _AuthScreenState extends State<AuthScreen> {
       }
 
       final token = await fcm.getToken();
-      print('TOKEN: $token');
+      log.info('TOKEN: $token');
 
       final uid = FirebaseAuth.instance.currentUser!.uid;
       final user =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       if (!user.exists) {
-        print('Adding user');
+        log.info('Adding user');
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
           'id': uid,
           'name': _enteredName,
@@ -143,7 +146,7 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     } catch (error) {
-      print('Unable to add user $error');
+      log.severe('Unable to add user $error');
       _showMessage(
         'Unexpected error occurred, please try again.',
         isError: true,

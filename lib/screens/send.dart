@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -18,10 +20,11 @@ class SendScreen extends StatefulWidget {
 
 class _SendScreenState extends State<SendScreen> {
   Contact? _selectedContact;
-  final loginUser = FirebaseAuth.instance.currentUser!;
 
   @override
   Widget build(BuildContext context) {
+    var currentAuthUser = FirebaseAuth.instance.currentUser!;
+
     void manageContacts() async {
       Navigator.of(context).push(MaterialPageRoute(builder: (context) {
         return const ManageContacts();
@@ -36,7 +39,7 @@ class _SendScreenState extends State<SendScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Home ${loginUser.phoneNumber}"),
+        title: Text("Home ${currentAuthUser.phoneNumber}"),
         actions: [
           IconButton(
             onPressed: manageRequests,
@@ -71,23 +74,29 @@ class _SendScreenState extends State<SendScreen> {
                 ),
                 StreamBuilder(
                     stream: FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(loginUser.uid)
+                        .doc('users/${currentAuthUser.uid}')
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const CircularProgressIndicator();
                       }
 
-                      final userData = snapshot.data?.data();
-                      log.info("user's data contacts", userData?["contacts"]);
+                      if (snapshot.hasError) {
+                        log.severe(snapshot.error);
+                      }
+
+                      log.info(snapshot.data!.data());
+
+                      var userData = snapshot.data!.data();
+                      log.info(
+                          "user's data contacts: ${userData?['contacts']}");
 
                       return StreamBuilder(
                           stream: FirebaseFirestore.instance
                               .collection('users')
                               .where(
-                                'uid',
-                                whereIn: userData?['contacts'] as List<dynamic>,
+                                'id',
+                                whereIn: userData?['contacts'],
                               )
                               .snapshots(),
                           builder: (context, snapshot) {
@@ -96,8 +105,12 @@ class _SendScreenState extends State<SendScreen> {
                               return const CircularProgressIndicator();
                             }
 
+                            if (snapshot.hasError) {
+                              log.severe(snapshot.error);
+                            }
+
                             var contactDocs = snapshot.data?.docs;
-                            log.info("contact docs", contactDocs);
+                            log.info("contact docs $contactDocs");
                             var contacts = contactDocs?.map((doc) {
                               final data = doc.data();
                               return Contact(

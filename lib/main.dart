@@ -9,6 +9,8 @@ import 'package:inzultz/screens/send.dart';
 import 'firebase_options.dart';
 import 'package:logging/logging.dart';
 
+final log = Logger('MainScreen');
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(

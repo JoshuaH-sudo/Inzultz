@@ -193,7 +193,7 @@ class ManageRequests extends StatelessWidget {
                                     },
                                     onSelected: (String value) {
                                       // Handle dropdown item selection here
-                                      print('Selected: $value');
+                                      log.info('Selected: $value');
                                     },
                                   )
                                 : null);
