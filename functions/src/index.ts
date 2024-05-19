@@ -61,8 +61,8 @@ export const sendNotification = onRequest(async (request, response) => {
     await admin.messaging().send({
       token: FCMToken,
       notification: {
-        title: `Your friend ${name}, wanted to express a sincere message`,
-        body: `${name} says FUCK YOU!`,
+        title: `${name} says FUCK YOU!`,
+        body: `Your friend ${name}, wanted to express a sincere message`,
       },
     });
   } catch (error) {
