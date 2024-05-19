@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -53,12 +55,14 @@ class _SendScreenState extends State<SendScreen> {
       //   ),
       // );
 
+      Fluttertoast.cancel();
       Fluttertoast.showToast(
         msg: body,
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
-        backgroundColor: Colors.red,
+        // Random background color
+        backgroundColor: Colors.primaries[Random().nextInt(Colors.primaries.length)],
         textColor: Colors.white,
         fontSize: 16.0,
       );
