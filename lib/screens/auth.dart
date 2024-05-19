@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:inzultz/main.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('AuthScreen');
@@ -77,6 +78,19 @@ class _AuthScreenState extends State<AuthScreen> {
       phoneNumber: _enteredPhoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
         log.info('Verification completed');
+
+        if (_isSignup) {
+          await analytics.logSignUp(signUpMethod: "phone", parameters: {
+            'phone': _enteredPhoneNumber,
+            'name': _enteredName,
+          });
+        } else {
+          await analytics.logLogin(loginMethod: 'phone', parameters: {
+            'phone': _enteredPhoneNumber,
+            'name': _enteredName,
+          });
+        }
+        
         await FirebaseAuth.instance.signInWithCredential(credential);
       },
       verificationFailed: (FirebaseAuthException e) {
@@ -115,6 +129,7 @@ class _AuthScreenState extends State<AuthScreen> {
       smsCode: _smsCode!,
     );
 
+    //TODO: See if this is working correctly
     await FirebaseAuth.instance.signInWithCredential(credential);
 
     try {

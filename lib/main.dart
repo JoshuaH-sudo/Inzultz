@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'firebase_options.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('MainScreen');
+FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,7 +61,7 @@ class MainApp extends StatelessWidget {
       return;
     }
     final token = await fcm.getToken();
-    
+
     await FirebaseFirestore.instance
         .collection('users')
         .doc(currentUser.uid)

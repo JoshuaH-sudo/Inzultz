@@ -1,13 +1,16 @@
-import 'dart:convert';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:inzultz/main.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:inzultz/screens/manage_contacts.dart';
 import 'package:inzultz/screens/manage_requests.dart';
 import 'package:logging/logging.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 final log = Logger('SendScreen');
 
@@ -36,6 +39,34 @@ class _SendScreenState extends State<SendScreen> {
         return const ManageRequests();
       }));
     }
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final title = message.notification?.title;
+      final body = message.notification?.body;
+
+      if (title == null || body == null) {
+        return;
+      }
+
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     backgroundColor: Colors.blue,
+      //     content: Text(body!),
+      //   ),
+      // );
+
+      Fluttertoast.cancel();
+      Fluttertoast.showToast(
+        msg: body,
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        // Random background color
+        backgroundColor: Colors.primaries[Random().nextInt(Colors.primaries.length)],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -184,7 +215,7 @@ class SendButton extends StatelessWidget {
       return;
     }
     log.info("sending notification to ${selectedContact!.FCMToken}");
-    
+
     final results = await FirebaseFunctions.instance
         .httpsCallable('sendNotification')
         .call({"FCMToken": selectedContact!.FCMToken});
@@ -201,13 +232,13 @@ class SendButton extends StatelessWidget {
         child: ElevatedButton(
           onPressed: sendNotification,
           style: ButtonStyle(
-            elevation: MaterialStateProperty.all(5),
-            shape: MaterialStateProperty.all(
+            elevation: WidgetStateProperty.all(5),
+            shape: WidgetStateProperty.all(
               RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(100000),
               ),
             ),
-            backgroundColor: MaterialStateProperty.all(Colors.red),
+            backgroundColor: WidgetStateProperty.all(Colors.red),
           ),
           child: const Center(
             child: Text(
