@@ -48,21 +48,15 @@ class _SendScreenState extends State<SendScreen> {
         return;
       }
 
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   SnackBar(
-      //     backgroundColor: Colors.blue,
-      //     content: Text(body!),
-      //   ),
-      // );
-
       Fluttertoast.cancel();
       Fluttertoast.showToast(
-        msg: body,
+        msg: title,
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
         // Random background color
-        backgroundColor: Colors.primaries[Random().nextInt(Colors.primaries.length)],
+        backgroundColor:
+            Colors.primaries[Random().nextInt(Colors.primaries.length)],
         textColor: Colors.white,
         fontSize: 16.0,
       );
@@ -121,6 +115,11 @@ class _SendScreenState extends State<SendScreen> {
                       var userData = snapshot.data!.data();
                       log.info(
                           "user's data contacts: ${userData?['contacts']}");
+
+                      if (userData?['contacts'] == null ||
+                          userData?['contacts'].isEmpty) {
+                        return const Text("No contracts ");
+                      }
 
                       return StreamBuilder(
                           stream: FirebaseFirestore.instance

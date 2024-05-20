@@ -117,7 +117,7 @@ export const sendContactRequest = onRequest(async (request, response) => {
   }
 
   // Check if new user is already in the user's contacts
-  if (user.contacts.includes(newContactUser.id)) {
+  if (user.contacts && user.contacts.includes(newContactUser.id)) {
     logger.error("User is already in contacts");
     response.json({
       data: { ok: false, error: "User is already in contacts" },

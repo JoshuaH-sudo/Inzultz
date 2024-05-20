@@ -7,6 +7,7 @@ import 'package:logging/logging.dart';
 import '../models/contact.dart';
 
 final log = Logger('ManageRequestsScreen');
+
 class ManageContacts extends StatelessWidget {
   const ManageContacts({super.key});
 
@@ -43,18 +44,68 @@ class ManageContacts extends StatelessWidget {
     }
 
     Future<void> removeContact(String id) async {
-      final currentUserData = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentAuthUser.uid)
+      // Remove contact from current user
+      // final currentUserData = await FirebaseFirestore.instance
+      //     .collection('users')
+      //     .doc(currentAuthUser.uid)
+      //     .get();
+
+      // final contacts = currentUserData['contacts'];
+      // contacts.remove(id);
+
+      // await FirebaseFirestore.instance
+      //     .collection('users')
+      //     .doc(currentAuthUser.uid)
+      //     .update({'contacts': contacts});
+
+      // // Remove current user from contact of the user being removed
+      // final removeUserData =
+      //     await FirebaseFirestore.instance.collection('users').doc(id).get();
+
+      // final removeUserContacts = removeUserData['contacts'];
+      // removeUserContacts.remove(currentAuthUser.uid);
+
+      // await FirebaseFirestore.instance
+      //     .collection('users')
+      //     .doc(id)
+      //     .update({'contacts': removeUserContacts});
+
+      // find the contract_request where the senderId or receiverId is the current user or the user being removed 
+      // and delete it to allow either user to re-add each other again
+      final contractRequests = await FirebaseFirestore.instance
+          .collectionGroup('contact_requests')
+          .where(
+            Filter.or(
+              Filter.or(
+                Filter(
+                  "senderId",
+                  isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+                ),
+                Filter(
+                  "receiverId",
+                  isEqualTo: id,
+                ),
+              ),
+              Filter.or(
+                Filter(
+                  "senderId",
+                  isEqualTo: id,
+                ),
+                Filter(
+                  "receiverId",
+                  isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+                ),
+              ),
+            ),
+          )
           .get();
+      
+      log.info('contractRequests to delete: ${contractRequests.docs}');
 
-      final contacts = currentUserData['contacts'];
-      contacts.remove(id);
-
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(currentAuthUser.uid)
-          .update({'contacts': contacts});
+      for (var doc in contractRequests.docs) {
+        log.info('Deleting contract request: ${doc.reference.path}');
+        await doc.reference.delete();
+      }
     }
 
     return Scaffold(
@@ -79,7 +130,8 @@ class ManageContacts extends StatelessWidget {
               );
             }
             if (currentUserSnapshot.hasError) {
-              log.info('CurrentUserSnapshot Error: ${currentUserSnapshot.error}');
+              log.info(
+                  'CurrentUserSnapshot Error: ${currentUserSnapshot.error}');
               return const Center(
                 child: Text(
                   'An error occurred!',
@@ -112,7 +164,8 @@ class ManageContacts extends StatelessWidget {
                   }
 
                   if (contactsSnapshot.hasError) {
-                    log.info('contactsSnapshot Error: ${contactsSnapshot.error}');
+                    log.info(
+                        'contactsSnapshot Error: ${contactsSnapshot.error}');
                     return const Center(
                       child: Text(
                         'An error occurred!',
