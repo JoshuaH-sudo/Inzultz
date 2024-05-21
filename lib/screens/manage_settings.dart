@@ -46,9 +46,7 @@ class ManageSettings extends StatelessWidget {
         children: [
           Center(
             child: ElevatedButton(
-              onPressed: () async {
-                await FirebaseAuth.instance.currentUser!.delete();
-              },
+              onPressed: deleteUser,
               child: const Text('Delete Account'),
             ),
           ),
