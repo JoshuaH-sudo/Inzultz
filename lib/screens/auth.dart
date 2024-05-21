@@ -9,8 +9,12 @@ import 'package:logging/logging.dart';
 
 final log = Logger('AuthScreen');
 
+enum AuthMode { LOGIN, SIGNUP }
+
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key});
+  final Function? authCompleteCallback;
+  final AuthMode? mode;
+  const AuthScreen({super.key, this.authCompleteCallback, this.mode});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -28,6 +32,18 @@ class _AuthScreenState extends State<AuthScreen> {
   String? _verificationCode;
   // int? _resendToken;
   String? _smsCode;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.mode != null) {
+      if (widget.mode == AuthMode.SIGNUP) {
+        setState(() {
+          _isSignup = true;
+        });
+      }
+    }
+  }
 
   _onSubmit() async {
     log.info('Submitting');
@@ -90,8 +106,11 @@ class _AuthScreenState extends State<AuthScreen> {
             'name': _enteredName,
           });
         }
-        
+
         await FirebaseAuth.instance.signInWithCredential(credential);
+        if (widget.authCompleteCallback != null) {
+          widget.authCompleteCallback!(credential);
+        }
       },
       verificationFailed: (FirebaseAuthException e) {
         log.info('Failed to verify phone number: ${e.message}');
@@ -240,20 +259,22 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
           child: Text(_isSignup ? "Create Account" : "Login"),
         ),
-      TextButton(
-          onPressed: () {
-            if (_isLoading) return;
+      // If mode as been defined, do not allow the user to switch.
+      if (widget.mode == null)
+        TextButton(
+            onPressed: () {
+              if (_isLoading) return;
 
-            setState(() {
-              _isSignup = !_isSignup;
-            });
-          },
-          child: Text(
-            _isSignup ? "I have an account?" : "Sign up",
-            style: TextStyle(
-              color: _isLoading ? Colors.grey : Colors.black,
-            ),
-          ))
+              setState(() {
+                _isSignup = !_isSignup;
+              });
+            },
+            child: Text(
+              _isSignup ? "I have an account?" : "Sign up",
+              style: TextStyle(
+                color: _isLoading ? Colors.grey : Colors.black,
+              ),
+            ))
     ];
 
     var verifyingContent = [
