@@ -21,6 +21,7 @@ class ManageContacts extends StatelessWidget {
     }
 
     Future<List<Contact>> getContacts(currentUserData) async {
+      // TODO: Use group collection contact_requests to get contacts
       final contacts = currentUserData?['contacts'] ?? [];
 
       if (contacts.isEmpty) {
@@ -44,32 +45,6 @@ class ManageContacts extends StatelessWidget {
     }
 
     Future<void> removeContact(String id) async {
-      // Remove contact from current user
-      // final currentUserData = await FirebaseFirestore.instance
-      //     .collection('users')
-      //     .doc(currentAuthUser.uid)
-      //     .get();
-
-      // final contacts = currentUserData['contacts'];
-      // contacts.remove(id);
-
-      // await FirebaseFirestore.instance
-      //     .collection('users')
-      //     .doc(currentAuthUser.uid)
-      //     .update({'contacts': contacts});
-
-      // // Remove current user from contact of the user being removed
-      // final removeUserData =
-      //     await FirebaseFirestore.instance.collection('users').doc(id).get();
-
-      // final removeUserContacts = removeUserData['contacts'];
-      // removeUserContacts.remove(currentAuthUser.uid);
-
-      // await FirebaseFirestore.instance
-      //     .collection('users')
-      //     .doc(id)
-      //     .update({'contacts': removeUserContacts});
-
       // find the contract_request where the senderId or receiverId is the current user or the user being removed 
       // and delete it to allow either user to re-add each other again
       final contractRequests = await FirebaseFirestore.instance
