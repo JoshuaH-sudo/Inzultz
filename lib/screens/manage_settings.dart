@@ -18,10 +18,6 @@ class ManageSettings extends StatelessWidget {
       }));
     }
 
-    authCompleteCallback() async {
-      Navigator.of(context).pop();
-    }
-
     deleteDBUser() async {
       log.shout('Deleting user');
       await FirebaseFirestore.instance
@@ -49,14 +45,14 @@ class ManageSettings extends StatelessWidget {
       }
     }
 
-    loginUser() async {
-      final newCredential = await Navigator.of(context)
-          .push(MaterialPageRoute(builder: (context) {
-        return AuthScreen(
-          authCompleteCallback: authCompleteCallback,
-          mode: AuthMode.LOGIN,
-        );
-      }));
+    login() async {
+      final newCredential = await Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) {
+          return const AuthScreen(
+            mode: AuthMode.LOGIN,
+          );
+        }),
+      );
 
       if (newCredential == null) {
         log.info('User did not login');
@@ -66,9 +62,9 @@ class ManageSettings extends StatelessWidget {
       log.info('User logged in');
     }
 
-    void deleteUser() async {
+    void onDeleteUser() async {
       try {
-        await loginUser();
+        await login();
         await deleteDBUser();
         await deleteUsersContactRequests();
 
@@ -97,7 +93,7 @@ class ManageSettings extends StatelessWidget {
         children: [
           Center(
             child: ElevatedButton(
-              onPressed: deleteUser,
+              onPressed: onDeleteUser,
               child: const Text('Delete Account'),
             ),
           ),

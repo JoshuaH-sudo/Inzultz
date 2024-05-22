@@ -12,9 +12,8 @@ final log = Logger('AuthScreen');
 enum AuthMode { LOGIN, SIGNUP }
 
 class AuthScreen extends StatefulWidget {
-  final Function? authCompleteCallback;
   final AuthMode? mode;
-  const AuthScreen({super.key, this.authCompleteCallback, this.mode});
+  const AuthScreen({super.key, this.mode});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -108,9 +107,7 @@ class _AuthScreenState extends State<AuthScreen> {
         }
 
         await FirebaseAuth.instance.signInWithCredential(credential);
-        if (widget.authCompleteCallback != null) {
-          widget.authCompleteCallback!(credential);
-        }
+        _returnToPreviousScreen();
       },
       verificationFailed: (FirebaseAuthException e) {
         log.info('Failed to verify phone number: ${e.message}');
@@ -148,43 +145,18 @@ class _AuthScreenState extends State<AuthScreen> {
       smsCode: _smsCode!,
     );
 
-    //TODO: See if this is working correctly
     await FirebaseAuth.instance.signInWithCredential(credential);
 
-    try {
-      final fcm = FirebaseMessaging.instance;
-      final notificationSettings = await fcm.requestPermission();
-      if (notificationSettings.authorizationStatus ==
-          AuthorizationStatus.denied) {
-        return;
+    if (_isSignup) {
+      try {
+        await _createUser();
+      } catch (error) {
+        log.severe('Unable to add user $error');
+        _showMessage(
+          'Unexpected error occurred, please try again.',
+          isError: true,
+        );
       }
-
-      final token = await fcm.getToken();
-      log.info('TOKEN: $token');
-
-      final uid = FirebaseAuth.instance.currentUser!.uid;
-      final user =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-
-      if (!user.exists) {
-        log.info('Adding user');
-        await FirebaseFirestore.instance.collection('users').doc(uid).set({
-          'id': uid,
-          'name': _enteredName,
-          'phoneNumber': _enteredPhoneNumber,
-          'FCMToken': token,
-        });
-      } else {
-        await FirebaseFirestore.instance.collection('users').doc(uid).update({
-          'FCMToken': token,
-        });
-      }
-    } catch (error) {
-      log.severe('Unable to add user $error');
-      _showMessage(
-        'Unexpected error occurred, please try again.',
-        isError: true,
-      );
     }
 
     _formKey.currentState!.reset();
@@ -192,6 +164,34 @@ class _AuthScreenState extends State<AuthScreen> {
       _isVerifying = false;
       _isLoading = false;
     });
+
+    _returnToPreviousScreen();
+  }
+
+  _createUser() async {
+    final fcm = FirebaseMessaging.instance;
+    final notificationSettings = await fcm.requestPermission();
+    if (notificationSettings.authorizationStatus ==
+        AuthorizationStatus.denied) {
+      return;
+    }
+
+    final token = await fcm.getToken();
+    log.info('TOKEN: $token');
+
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    log.info('Adding user');
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'id': uid,
+      'name': _enteredName,
+      'phoneNumber': _enteredPhoneNumber,
+      'FCMToken': token,
+    });
+  }
+
+  _returnToPreviousScreen() {
+    log.info('Returning to previous screen');
+    Navigator.of(context).pop();
   }
 
   _showMessage(String message, {bool isError = false}) {
