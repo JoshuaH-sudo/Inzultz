@@ -48,7 +48,7 @@ class ManageContacts extends StatelessWidget {
       // find the contract_request where the senderId or receiverId is the current user or the user being removed 
       // and delete it to allow either user to re-add each other again
       final contractRequests = await FirebaseFirestore.instance
-          .collectionGroup('contact_requests')
+          .collection('contact_requests')
           .where(
             Filter.or(
               Filter.or(

@@ -21,6 +21,7 @@ import {
 } from "./helpers";
 import { updateContactRequestSchema } from "./schemas";
 import { ContactRequest } from "./types";
+import { Filter } from "firebase-admin/firestore";
 
 admin.initializeApp();
 
@@ -66,7 +67,7 @@ export const sendNotification = onRequest(async (request, response) => {
       },
     });
   } catch (error) {
-    logger.error(error, );
+    logger.error(error);
 
     if (error instanceof Error) {
       response.json({ data: { ok: false, error: error.message } });
@@ -116,21 +117,17 @@ export const sendContactRequest = onRequest(async (request, response) => {
     return;
   }
 
-  // Check if new user is already in the user's contacts
-  if (user.contacts && user.contacts.includes(newContactUser.id)) {
-    logger.error("User is already in contacts");
-    response.json({
-      data: { ok: false, error: "User is already in contacts" },
-    });
-    return;
-  }
-
   // Find if the user has already sent a request to the new contact
   const contactRequestDoc = await admin
     .firestore()
-    .doc(`users/${user.id}`)
+    // .doc(`users/${user.id}`)
     .collection("contact_requests")
-    .where("receiverId", "==", newContactUser.id)
+    .where(
+      Filter.and(
+        Filter.where("receiverId", "==", newContactUser.id),
+        Filter.where("senderId", "==", user.id)
+      )
+    )
     .get();
 
   if (!contactRequestDoc.empty) {
@@ -144,7 +141,7 @@ export const sendContactRequest = onRequest(async (request, response) => {
   // Create a request
   const newContactRequestDoc = await admin
     .firestore()
-    .doc(`users/${user.id}`)
+    // .doc(`users/${user.id}`)
     .collection("contact_requests")
     .add({
       senderId: user.id,
@@ -157,7 +154,7 @@ export const sendContactRequest = onRequest(async (request, response) => {
   const { name } = user;
   const token = newContactUser.FCMToken;
   const title = `Contact request from ${name}`;
-  const body = `${name} wants to add you to their contacts`;
+  const body = `${name} wants to connect with you.`;
   await sendAppNotification(token, title, body);
 
   logger.info("Contact Request Sent", {
@@ -227,7 +224,7 @@ export const updateContactRequestStatus = onRequest(
     // Update the contact request status
     await admin
       .firestore()
-      .doc(`users/${contactRequest.senderId}`)
+      // .doc(`users/${contactRequest.senderId}`)
       .collection("contact_requests")
       .doc(contactRequestId)
       .update({
@@ -239,9 +236,14 @@ export const updateContactRequestStatus = onRequest(
     // to the requesting user
     const receivingUserContactRequestDoc = await admin
       .firestore()
-      .doc(`users/${contactRequest.receiverId}`)
+      // .doc(`users/${contactRequest.receiverId}`)
       .collection("contact_requests")
-      .where("receiverId", "==", contactRequest.senderId)
+      .where(
+        Filter.and(
+          Filter.where("receiverId", "==", contactRequest.senderId),
+          Filter.where("senderId", "==", contactRequest.receiverId)
+        )
+      )
       .get();
 
     const receivingUserContactRequest = receivingUserContactRequestDoc.docs[0];
@@ -264,26 +266,6 @@ export const updateContactRequestStatus = onRequest(
     }
 
     if (newStatus === "accepted") {
-      // Add the new contact to the sender's contacts
-      await admin
-        .firestore()
-        .doc(`users/${contactRequest.senderId}`)
-        .update({
-          contacts: admin.firestore.FieldValue.arrayUnion(
-            contactRequest.receiverId
-          ),
-        });
-
-      // Add the user to the receiver's contacts
-      await admin
-        .firestore()
-        .doc(`users/${contactRequest.receiverId}`)
-        .update({
-          contacts: admin.firestore.FieldValue.arrayUnion(
-            contactRequest.senderId
-          ),
-        });
-
       // Send a notification to the requesting user
       const { name } = user;
       const token = sendingUser.FCMToken;
