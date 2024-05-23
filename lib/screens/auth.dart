@@ -9,6 +9,7 @@ import 'package:logging/logging.dart';
 
 final log = Logger('AuthScreen');
 
+// ignore: constant_identifier_names
 enum AuthMode { LOGIN, SIGNUP }
 
 class AuthScreen extends StatefulWidget {
