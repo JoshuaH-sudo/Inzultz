@@ -138,6 +138,39 @@ export const sendContactRequest = onRequest(async (request, response) => {
     return;
   }
 
+  // Check if a request has been sent to the user
+  const contactRequestDoc2 = await admin
+    .firestore()
+    // .doc(`users/${user.id}`)
+    .collection("contact_requests")
+    .where(
+      Filter.and(
+        Filter.where("receiverId", "==", user.id),
+        Filter.where("senderId", "==", newContactUser.id)
+      )
+    )
+    .get();
+
+  if (!contactRequestDoc2.empty) {
+    logger.error("Request already received");
+    const data = contactRequestDoc2.docs[0].data();
+
+    if (data.status === "accepted") {
+      response.json({
+        data: { ok: false, error: "User is in your contacts already" },
+      });
+      return;
+    }
+
+    response.json({
+      data: {
+        ok: false,
+        error: "A request was already received from this user",
+      },
+    });
+    return;
+  }
+
   // Create a request
   const newContactRequestDoc = await admin
     .firestore()
