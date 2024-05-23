@@ -20,17 +20,25 @@ class ManageContacts extends StatelessWidget {
       }));
     }
 
-    Future<List<Contact>> getContacts(currentUserData) async {
-      // TODO: Use group collection contact_requests to get contacts
-      final contacts = currentUserData?['contacts'] ?? [];
-
-      if (contacts.isEmpty) {
+    Future<List<Contact>> getContacts(
+      List<QueryDocumentSnapshot<Map<String, dynamic>>>? contactRequests,
+    ) async {
+      if (contactRequests == null) {
         return [];
       }
 
+      final contactIds = contactRequests.map((doc) {
+        final data = doc.data();
+        if (data['senderId'] == currentAuthUser.uid) {
+          return data['receiverId'];
+        } else if (data['receiverId'] == currentAuthUser.uid) {
+          return data['senderId'];
+        }
+      });
+
       final contactsData = await FirebaseFirestore.instance
           .collection('users')
-          .where('id', whereIn: contacts)
+          .where('id', whereIn: contactIds.toList())
           .get();
       log.info('contactsData: ${contactsData.docs}');
 
@@ -45,7 +53,7 @@ class ManageContacts extends StatelessWidget {
     }
 
     Future<void> removeContact(String id) async {
-      // find the contract_request where the senderId or receiverId is the current user or the user being removed 
+      // find the contract_request where the senderId or receiverId is the current user or the user being removed
       // and delete it to allow either user to re-add each other again
       final contractRequests = await FirebaseFirestore.instance
           .collection('contact_requests')
@@ -74,7 +82,7 @@ class ManageContacts extends StatelessWidget {
             ),
           )
           .get();
-      
+
       log.info('contractRequests to delete: ${contractRequests.docs}');
 
       for (var doc in contractRequests.docs) {
@@ -95,7 +103,22 @@ class ManageContacts extends StatelessWidget {
       ),
       body: StreamBuilder(
           stream: FirebaseFirestore.instance
-              .doc('users/${currentAuthUser.uid}')
+              .collection('contact_requests')
+              .where(
+                Filter.and(
+                  Filter.or(
+                    Filter(
+                      "senderId",
+                      isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+                    ),
+                    Filter(
+                      "receiverId",
+                      isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+                    ),
+                  ),
+                  Filter("status", isEqualTo: "accepted"),
+                ),
+              )
               .snapshots(),
           builder: (context, currentUserSnapshot) {
             if (currentUserSnapshot.connectionState ==
@@ -131,7 +154,7 @@ class ManageContacts extends StatelessWidget {
             }
 
             return FutureBuilder(
-                future: getContacts(currentUserSnapshot.data?.data()),
+                future: getContacts(currentUserSnapshot.data?.docs),
                 builder: (context, contactsSnapshot) {
                   if (contactsSnapshot.connectionState ==
                       ConnectionState.waiting) {
