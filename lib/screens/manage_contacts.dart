@@ -36,6 +36,10 @@ class ManageContacts extends StatelessWidget {
         }
       });
 
+      if (contactIds.isEmpty) {
+        return [];
+      }
+
       final contactsData = await FirebaseFirestore.instance
           .collection('users')
           .where('id', whereIn: contactIds.toList())
