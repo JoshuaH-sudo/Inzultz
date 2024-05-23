@@ -147,7 +147,8 @@ export const sendContactRequest = onRequest(async (request, response) => {
       senderId: user.id,
       receiverId: newContactUser.id,
       status: "pending",
-      updateAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
   // Send a notification to the new contact user
