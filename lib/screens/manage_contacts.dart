@@ -63,7 +63,7 @@ class ManageContacts extends StatelessWidget {
           .collection('contact_requests')
           .where(
             Filter.or(
-              Filter.or(
+              Filter.and(
                 Filter(
                   "senderId",
                   isEqualTo: FirebaseAuth.instance.currentUser!.uid,
@@ -73,7 +73,7 @@ class ManageContacts extends StatelessWidget {
                   isEqualTo: id,
                 ),
               ),
-              Filter.or(
+              Filter.and(
                 Filter(
                   "senderId",
                   isEqualTo: id,
