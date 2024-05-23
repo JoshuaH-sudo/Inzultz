@@ -9,6 +9,7 @@ import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:inzultz/screens/manage_contacts.dart';
 import 'package:inzultz/screens/manage_requests.dart';
+import 'package:inzultz/screens/manage_settings.dart';
 import 'package:logging/logging.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
@@ -37,6 +38,12 @@ class _SendScreenState extends State<SendScreen> {
     void manageRequests() async {
       Navigator.of(context).push(MaterialPageRoute(builder: (context) {
         return const ManageRequests();
+      }));
+    }
+
+    void settings() async {
+      Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+        return const ManageSettings();
       }));
     }
 
@@ -73,6 +80,12 @@ class _SendScreenState extends State<SendScreen> {
           IconButton(
             icon: const Icon(Icons.manage_accounts_rounded),
             onPressed: manageContacts,
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              settings();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.logout),

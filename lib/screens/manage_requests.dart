@@ -8,6 +8,7 @@ import 'package:inzultz/screens/add_contact.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('ManageRequestsScreen');
+
 class ManageRequests extends StatelessWidget {
   const ManageRequests({super.key});
 
@@ -25,18 +26,19 @@ class ManageRequests extends StatelessWidget {
 
       for (var element in contactRequests) {
         try {
-        final contactDoc =
-            await FirebaseFirestore.instance.doc('users/${element.senderId}').get();
+          final contactDoc = await FirebaseFirestore.instance
+              .doc('users/${element.senderId}')
+              .get();
 
-        final contactData = contactDoc.data();
-        log.info('contactData: $contactData');
+          final contactData = contactDoc.data();
+          log.info('contactData: $contactData');
 
-        contactInformation.add(Contact(
-          id: contactData!["id"],
-          name: contactData["name"],
-          FCMToken: contactData['FCMToken'],
-          phoneNumber: contactData['phoneNumber'],
-        ));
+          contactInformation.add(Contact(
+            id: contactData!["id"],
+            name: contactData["name"],
+            FCMToken: contactData['FCMToken'],
+            phoneNumber: contactData['phoneNumber'],
+          ));
         } catch (e) {
           log.severe(e);
         }
@@ -48,10 +50,8 @@ class ManageRequests extends StatelessWidget {
 
     acceptRequest(String id) async {
       try {
-        FirebaseFunctions.instance.httpsCallable('updateContactRequestStatus')({
-          "contactRequestId": id,
-          "newStatus": "accepted"
-        });
+        FirebaseFunctions.instance.httpsCallable('updateContactRequestStatus')(
+            {"contactRequestId": id, "newStatus": "accepted"});
       } catch (e) {
         log.severe(e);
       }
@@ -59,10 +59,8 @@ class ManageRequests extends StatelessWidget {
 
     declineRequest(String id) async {
       try {
-        FirebaseFunctions.instance.httpsCallable('updateContactRequestStatus')({
-          "contactRequestId": id,
-          "newStatus": "declined"
-        });
+        FirebaseFunctions.instance.httpsCallable('updateContactRequestStatus')(
+            {"contactRequestId": id, "newStatus": "declined"});
       } catch (e) {
         log.severe(e);
       }
@@ -83,20 +81,19 @@ class ManageRequests extends StatelessWidget {
               .collectionGroup("contact_requests")
               .where(
                 Filter.and(
-                  Filter.or(
-                    Filter("senderId", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
-                    Filter("receiverId", isEqualTo: FirebaseAuth.instance.currentUser!.uid),
-                  ),
+                  Filter("receiverId",
+                      isEqualTo: FirebaseAuth.instance.currentUser!.uid),
                   Filter("status", isEqualTo: "pending"),
                 ),
-              ).snapshots(),
+              )
+              .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
             }
-            
+
             if (snapshot.hasError) {
               log.severe(snapshot.error);
               return const Center(
@@ -122,7 +119,7 @@ class ManageRequests extends StatelessWidget {
                 ),
               );
             }
-                
+
             log.info('requests: ${requestsData.toList()}');
             return FutureBuilder(
                 future: getContactInformation(requestsData.toList()),
@@ -153,10 +150,12 @@ class ManageRequests extends StatelessWidget {
                         return ListTile(
                             title: Text(contact.name),
                             subtitle: Text(contact.phoneNumber),
-                            leading: data.receiverId == FirebaseAuth.instance.currentUser!.uid
+                            leading: data.receiverId ==
+                                    FirebaseAuth.instance.currentUser!.uid
                                 ? const Icon(Icons.call_received_rounded)
                                 : const Icon(Icons.call_made_rounded),
-                            trailing: data.receiverId == FirebaseAuth.instance.currentUser!.uid
+                            trailing: data.receiverId ==
+                                    FirebaseAuth.instance.currentUser!.uid
                                 ? PopupMenuButton<String>(
                                     itemBuilder: (BuildContext context) {
                                       return <PopupMenuEntry<String>>[

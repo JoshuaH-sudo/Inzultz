@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +20,18 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  if (kDebugMode) {
+    print('Running in debug mode');
+    try {
+      // FirebaseFirestore.instance.useFirestoreEmulator('localhost', 8080);
+      // await FirebaseAuth.instance.useAuthEmulator('localhost', 9099);
+      // FirebaseFunctions.instance.useFunctionsEmulator('localhost', 5001);
+    } catch (e) {
+      // ignore: avoid_print
+      print('Could not connect to emulators: $e');
+    }
+  }
 
   Logger.root.level = Level.ALL; // defaults to Level.INFO
   Logger.root.onRecord.listen((record) {
@@ -87,9 +101,9 @@ class MainApp extends StatelessWidget {
             return const SendScreen();
           }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            // return const SplashScreen();
-          }
+          // if (snapshot.connectionState == ConnectionState.waiting) {
+          //   // return const SplashScreen();
+          // }
           return const AuthScreen();
         },
       ),
