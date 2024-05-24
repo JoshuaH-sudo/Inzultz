@@ -9,10 +9,11 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:inzultz/screens/manage_contacts.dart';
 import 'package:inzultz/screens/manage_requests.dart';
 import 'package:inzultz/screens/manage_settings.dart';
+import 'package:inzultz/utils.dart';
 import 'package:logging/logging.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-final log = Logger('SendScreen');
+final _log = Logger('SendScreen');
 
 class SendScreen extends StatefulWidget {
   const SendScreen({super.key});
@@ -111,7 +112,24 @@ class _SendScreenState extends State<SendScreen> {
                 ),
                 StreamBuilder(
                     stream: FirebaseFirestore.instance
-                        .doc('users/${currentAuthUser.uid}')
+                        .collection('contract_requests')
+                        .where(
+                          Filter.and(
+                            Filter.or(
+                              Filter(
+                                "senderId",
+                                isEqualTo:
+                                    FirebaseAuth.instance.currentUser!.uid,
+                              ),
+                              Filter(
+                                "receiverId",
+                                isEqualTo:
+                                    FirebaseAuth.instance.currentUser!.uid,
+                              ),
+                            ),
+                            Filter("status", isEqualTo: "accepted"),
+                          ),
+                        )
                         .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -119,28 +137,19 @@ class _SendScreenState extends State<SendScreen> {
                       }
 
                       if (snapshot.hasError) {
-                        log.severe(snapshot.error);
+                        _log.severe(snapshot.error);
                       }
 
-                      log.info(snapshot.data!.data());
+                      _log.info(snapshot.data!.docs);
 
-                      var userData = snapshot.data!.data();
-                      log.info(
-                          "user's data contacts: ${userData?['contacts']}");
+                      var contactRequests = snapshot.data!.docs;
 
-                      if (userData?['contacts'] == null ||
-                          userData?['contacts'].isEmpty) {
-                        return const Text("No contracts ");
+                      if (contactRequests.isEmpty) {
+                        return const Text("No contacts found");
                       }
 
-                      return StreamBuilder(
-                          stream: FirebaseFirestore.instance
-                              .collection('users')
-                              .where(
-                                'id',
-                                whereIn: userData?['contacts'],
-                              )
-                              .snapshots(),
+                      return FutureBuilder(
+                          future: getContacts(contactRequests),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
@@ -148,22 +157,10 @@ class _SendScreenState extends State<SendScreen> {
                             }
 
                             if (snapshot.hasError) {
-                              log.severe(snapshot.error);
+                              _log.severe(snapshot.error);
                             }
 
-                            var contactDocs = snapshot.data?.docs;
-                            log.info("contact docs $contactDocs");
-                            var contacts = contactDocs?.map((doc) {
-                              final data = doc.data();
-                              return Contact(
-                                id: doc.id,
-                                name: data["name"],
-                                FCMToken: doc['FCMToken'],
-                                phoneNumber: doc['phoneNumber'],
-                              );
-                            }).toList();
-
-                            log.info(contacts);
+                            final contacts = snapshot.data;
 
                             return MenuAnchor(
                               builder: (context, controller, child) {
@@ -225,13 +222,13 @@ class SendButton extends StatelessWidget {
     if (selectedContact == null) {
       return;
     }
-    log.info("sending notification to ${selectedContact!.FCMToken}");
+    _log.info("sending notification to ${selectedContact!.FCMToken}");
 
     final results = await FirebaseFunctions.instance
         .httpsCallable('sendNotification')
         .call({"FCMToken": selectedContact!.FCMToken});
 
-    log.info(results.data);
+    _log.info(results.data);
   }
 
   @override
