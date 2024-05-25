@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:inzultz/models/contact.dart';
+import 'package:inzultz/models/db_collection.dart';
 import 'package:logging/logging.dart';
 
 final _log = Logger('Utils');
@@ -27,7 +28,7 @@ Future<List<Contact>> getContacts(
   }
 
   final contactsData = await FirebaseFirestore.instance
-      .collection('users')
+      .collection(DBCollection.users)
       .where('id', whereIn: contactIds.toList())
       .get();
 
@@ -47,7 +48,7 @@ Future<void> removeContact(String id) async {
   // find the contract_request where the senderId or receiverId is the current user or the user being removed
   // and delete it to allow either user to re-add each other again
   final contractRequests = await FirebaseFirestore.instance
-      .collection('contact_requests')
+      .collection(DBCollection.contactRequests)
       .where(
         Filter.or(
           Filter.and(

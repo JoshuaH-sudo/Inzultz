@@ -9,6 +9,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:inzultz/screens/manage_contacts.dart';
 import 'package:inzultz/screens/manage_requests.dart';
 import 'package:inzultz/screens/manage_settings.dart';
+import 'package:inzultz/models/db_collection.dart';
 import 'package:inzultz/utils.dart';
 import 'package:logging/logging.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -112,7 +113,7 @@ class _SendScreenState extends State<SendScreen> {
                 ),
                 StreamBuilder(
                     stream: FirebaseFirestore.instance
-                        .collection('contact_requests')
+                        .collection(DBCollection.contactRequests)
                         .where(
                           Filter.and(
                             Filter.or(

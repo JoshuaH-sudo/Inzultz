@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:inzultz/models/contact_request.dart';
 import 'package:inzultz/screens/add_contact.dart';
+import 'package:inzultz/models/db_collection.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('ManageRequestsScreen');
@@ -78,7 +79,7 @@ class ManageRequests extends StatelessWidget {
       ),
       body: StreamBuilder(
           stream: FirebaseFirestore.instance
-              .collectionGroup("contact_requests")
+              .collectionGroup(DBCollection.contactRequests)
               .where(
                 Filter.and(
                   Filter("receiverId",

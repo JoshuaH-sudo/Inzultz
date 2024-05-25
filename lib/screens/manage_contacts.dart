@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inzultz/screens/add_contact.dart';
+import 'package:inzultz/models/db_collection.dart';
 import 'package:inzultz/utils.dart';
 import 'package:logging/logging.dart';
 
@@ -30,7 +31,7 @@ class ManageContacts extends StatelessWidget {
       ),
       body: StreamBuilder(
           stream: FirebaseFirestore.instance
-              .collection('contact_requests')
+              .collection(DBCollection.contactRequests)
               .where(
                 Filter.and(
                   Filter.or(

@@ -3,6 +3,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:inzultz/models/db_collection.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('AddContactScreen');
@@ -28,7 +29,7 @@ class _AddContactState extends State<AddContact> {
 
       final currentUser = FirebaseAuth.instance.currentUser;
       final currentUserData = await FirebaseFirestore.instance
-          .collection('users')
+          .collection(DBCollection.users)
           .doc(currentUser!.uid)
           .get();
 

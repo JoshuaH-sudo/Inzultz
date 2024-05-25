@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inzultz/screens/add_contact.dart';
 import 'package:inzultz/screens/auth.dart';
+import 'package:inzultz/models/db_collection.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('SettingsScreen');
@@ -21,7 +22,7 @@ class ManageSettings extends StatelessWidget {
     deleteDBUser() async {
       log.shout('Deleting user');
       await FirebaseFirestore.instance
-          .collection('users')
+          .collection(DBCollection.users)
           .doc(FirebaseAuth.instance.currentUser!.uid)
           .delete();
     }
@@ -29,7 +30,7 @@ class ManageSettings extends StatelessWidget {
     deleteUsersContactRequests() async {
       log.shout('Deleting users contact requests');
       final contactRequests = await FirebaseFirestore.instance
-          .collectionGroup("contact_requests")
+          .collectionGroup(DBCollection.contactRequests)
           .where(
             Filter.or(
               Filter("senderId",
