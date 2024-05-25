@@ -112,7 +112,7 @@ class _SendScreenState extends State<SendScreen> {
                 ),
                 StreamBuilder(
                     stream: FirebaseFirestore.instance
-                        .collection('contract_requests')
+                        .collection('contact_requests')
                         .where(
                           Filter.and(
                             Filter.or(
