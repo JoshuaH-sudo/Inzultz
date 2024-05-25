@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inzultz/screens/add_contact.dart';
 import 'package:inzultz/models/db_collection.dart';
 import 'package:inzultz/utils.dart';
@@ -8,11 +9,11 @@ import 'package:logging/logging.dart';
 
 final log = Logger('ManageRequestsScreen');
 
-class ManageContacts extends StatelessWidget {
+class ManageContacts extends ConsumerWidget {
   const ManageContacts({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     void addNewContact() async {
       Navigator.of(context).push(MaterialPageRoute(builder: (context) {
         return const AddContact();

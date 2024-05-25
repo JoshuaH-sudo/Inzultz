@@ -10,7 +10,7 @@ var currentAuthUser = FirebaseAuth.instance.currentUser!;
 Future<List<Contact>> getContacts(
   List<QueryDocumentSnapshot<Map<String, dynamic>>>? contactRequests,
 ) async {
-  if (contactRequests == null) {
+  if (contactRequests == null || contactRequests.isEmpty) {
     return [];
   }
 
@@ -34,7 +34,7 @@ Future<List<Contact>> getContacts(
 
   _log.info('contactsData: ${contactsData.docs}');
 
-  return contactsData.docs.map((doc) {
+  final contacts = contactsData.docs.map((doc) {
     return Contact(
       id: doc.id,
       name: doc["name"],
@@ -42,6 +42,7 @@ Future<List<Contact>> getContacts(
       phoneNumber: doc['phoneNumber'],
     );
   }).toList();
+  return contacts;
 }
 
 Future<void> removeContact(String id) async {

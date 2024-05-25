@@ -4,8 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inzultz/components/loading_indicator.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:inzultz/providers/app.dart';
 import 'package:inzultz/screens/manage_contacts.dart';
 import 'package:inzultz/screens/manage_requests.dart';
 import 'package:inzultz/screens/manage_settings.dart';
@@ -16,18 +19,19 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 final _log = Logger('SendScreen');
 
-class SendScreen extends StatefulWidget {
+class SendScreen extends ConsumerStatefulWidget {
   const SendScreen({super.key});
 
   @override
-  State<SendScreen> createState() => _SendScreenState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _SendScreenState();
 }
 
-class _SendScreenState extends State<SendScreen> {
+class _SendScreenState extends ConsumerState<SendScreen> {
   Contact? _selectedContact;
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = ref.watch(appProvider).isLoading;
     var currentAuthUser = FirebaseAuth.instance.currentUser!;
 
     void manageContacts() async {
@@ -69,6 +73,27 @@ class _SendScreenState extends State<SendScreen> {
         fontSize: 16.0,
       );
     });
+
+    getContactRequest() {
+      return FirebaseFirestore.instance
+          .collection(DBCollection.contactRequests)
+          .where(
+            Filter.and(
+              Filter.or(
+                Filter(
+                  "senderId",
+                  isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+                ),
+                Filter(
+                  "receiverId",
+                  isEqualTo: FirebaseAuth.instance.currentUser!.uid,
+                ),
+              ),
+              Filter("status", isEqualTo: "accepted"),
+            ),
+          )
+          .snapshots();
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -112,31 +137,8 @@ class _SendScreenState extends State<SendScreen> {
                   width: 8,
                 ),
                 StreamBuilder(
-                    stream: FirebaseFirestore.instance
-                        .collection(DBCollection.contactRequests)
-                        .where(
-                          Filter.and(
-                            Filter.or(
-                              Filter(
-                                "senderId",
-                                isEqualTo:
-                                    FirebaseAuth.instance.currentUser!.uid,
-                              ),
-                              Filter(
-                                "receiverId",
-                                isEqualTo:
-                                    FirebaseAuth.instance.currentUser!.uid,
-                              ),
-                            ),
-                            Filter("status", isEqualTo: "accepted"),
-                          ),
-                        )
-                        .snapshots(),
+                    stream: getContactRequest(),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const CircularProgressIndicator();
-                      }
-
                       if (snapshot.hasError) {
                         _log.severe(snapshot.error);
                       }
@@ -145,18 +147,9 @@ class _SendScreenState extends State<SendScreen> {
 
                       var contactRequests = snapshot.data!.docs;
 
-                      if (contactRequests.isEmpty) {
-                        return const Text("No contacts found");
-                      }
-
                       return FutureBuilder(
                           future: getContacts(contactRequests),
                           builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const CircularProgressIndicator();
-                            }
-
                             if (snapshot.hasError) {
                               _log.severe(snapshot.error);
                             }
