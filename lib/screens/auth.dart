@@ -107,8 +107,9 @@ class _AuthScreenState extends State<AuthScreen> {
           });
         }
 
-        await FirebaseAuth.instance.signInWithCredential(credential);
-        _returnToPreviousScreen();
+        final userCreds =
+            await FirebaseAuth.instance.signInWithCredential(credential);
+        _returnToPreviousScreen(userCreds);
       },
       verificationFailed: (FirebaseAuthException e) {
         log.info('Failed to verify phone number: ${e.message}');
@@ -146,7 +147,8 @@ class _AuthScreenState extends State<AuthScreen> {
       smsCode: _smsCode!,
     );
 
-    await FirebaseAuth.instance.signInWithCredential(credential);
+    final userCreds =
+        await FirebaseAuth.instance.signInWithCredential(credential);
 
     if (_isSignup) {
       try {
@@ -166,7 +168,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _isLoading = false;
     });
 
-    _returnToPreviousScreen();
+    _returnToPreviousScreen(userCreds);
   }
 
   _createUser() async {
@@ -190,9 +192,9 @@ class _AuthScreenState extends State<AuthScreen> {
     });
   }
 
-  _returnToPreviousScreen() {
+  _returnToPreviousScreen(credential) {
     log.info('Returning to previous screen');
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(credential);
   }
 
   _showMessage(String message, {bool isError = false}) {

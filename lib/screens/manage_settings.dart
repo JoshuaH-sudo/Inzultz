@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:inzultz/screens/add_contact.dart';
 import 'package:inzultz/screens/auth.dart';
+import 'package:inzultz/models/db_collection.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('SettingsScreen');
@@ -19,17 +20,17 @@ class ManageSettings extends StatelessWidget {
     }
 
     deleteDBUser() async {
-      log.shout('Deleting user');
+      log.info('Deleting user');
       await FirebaseFirestore.instance
-          .collection('users')
+          .collection(DBCollection.users)
           .doc(FirebaseAuth.instance.currentUser!.uid)
           .delete();
     }
 
     deleteUsersContactRequests() async {
-      log.shout('Deleting users contact requests');
+      log.info('Deleting users contact requests');
       final contactRequests = await FirebaseFirestore.instance
-          .collectionGroup("contact_requests")
+          .collectionGroup(DBCollection.contactRequests)
           .where(
             Filter.or(
               Filter("senderId",
@@ -54,17 +55,16 @@ class ManageSettings extends StatelessWidget {
         }),
       );
 
-      if (newCredential == null) {
-        log.info('User did not login');
-        // TODO: Show error message
-        return;
-      }
-      log.info('User logged in');
+      return newCredential;
     }
 
     void onDeleteUser() async {
       try {
-        await login();
+        final newCred = await login();
+        log.info('newCred: $newCred');
+        if (newCred == null) {
+          return;
+        }
         await deleteDBUser();
         await deleteUsersContactRequests();
 

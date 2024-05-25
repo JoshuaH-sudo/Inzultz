@@ -67,7 +67,7 @@ export const sendAppNotification = async (
 export const getContactRequests = async (contactRequestId: string) => {
   const contactRequestDoc = await admin
     .firestore()
-    .collectionGroup("contact_requests")
+    .collection("contact_requests")
     .get();
   const contactRequest = contactRequestDoc.docs
     .find((doc) => doc.id === contactRequestId)

@@ -8,6 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inzultz/screens/auth.dart';
 import 'package:inzultz/screens/send.dart';
+import 'package:inzultz/models/db_collection.dart';
 import 'firebase_options.dart';
 import 'package:logging/logging.dart';
 
@@ -45,7 +46,7 @@ void main() async {
     }
 
     await FirebaseFirestore.instance
-        .collection('users')
+        .collection(DBCollection.users)
         .doc(currentUser.uid)
         .update({
       'FCMToken': fcmToken,
@@ -77,7 +78,7 @@ class MainApp extends StatelessWidget {
     final token = await fcm.getToken();
 
     await FirebaseFirestore.instance
-        .collection('users')
+        .collection(DBCollection.users)
         .doc(currentUser.uid)
         .update({
       'FCMToken': token,
