@@ -20,7 +20,7 @@ class ManageSettings extends StatelessWidget {
     }
 
     deleteDBUser() async {
-      log.shout('Deleting user');
+      log.info('Deleting user');
       await FirebaseFirestore.instance
           .collection(DBCollection.users)
           .doc(FirebaseAuth.instance.currentUser!.uid)
@@ -28,7 +28,7 @@ class ManageSettings extends StatelessWidget {
     }
 
     deleteUsersContactRequests() async {
-      log.shout('Deleting users contact requests');
+      log.info('Deleting users contact requests');
       final contactRequests = await FirebaseFirestore.instance
           .collectionGroup(DBCollection.contactRequests)
           .where(
@@ -55,17 +55,16 @@ class ManageSettings extends StatelessWidget {
         }),
       );
 
-      if (newCredential == null) {
-        log.info('User did not login');
-        // TODO: Show error message
-        return;
-      }
-      log.info('User logged in');
+      return newCredential;
     }
 
     void onDeleteUser() async {
       try {
-        await login();
+        final newCred = await login();
+        log.info('newCred: $newCred');
+        if (newCred == null) {
+          return;
+        }
         await deleteDBUser();
         await deleteUsersContactRequests();
 
