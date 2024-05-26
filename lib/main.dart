@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inzultz/components/loading_indicator.dart';
+import 'package:inzultz/providers/app.dart';
 import 'package:inzultz/screens/auth.dart';
 import 'package:inzultz/screens/send.dart';
 import 'package:inzultz/models/db_collection.dart';
@@ -60,7 +62,7 @@ void main() async {
   ));
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends ConsumerWidget {
   const MainApp({super.key});
 
   setFCMToken() async {
@@ -86,27 +88,35 @@ class MainApp extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isLoading = ref.watch(appProvider).isLoading;
     return MaterialApp(
       title: 'inzultz',
       theme: ThemeData().copyWith(
         colorScheme: ColorScheme.fromSeed(
             seedColor: const Color.fromARGB(255, 63, 17, 177)),
       ),
-      home: StreamBuilder(
-        // Can produce multiple values over time unlike FutureBuilder.
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            setFCMToken();
-            return const SendScreen();
-          }
+      home: Stack(
+        children: [
+          StreamBuilder(
+            // Can produce multiple values over time unlike FutureBuilder.
+            stream: FirebaseAuth.instance.authStateChanges(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData && snapshot.data != null) {
+                setFCMToken();
+                return const SendScreen();
+              }
 
-          // if (snapshot.connectionState == ConnectionState.waiting) {
-          //   // return const SplashScreen();
-          // }
-          return const AuthScreen();
-        },
+              if (snapshot.hasError) {
+                log.severe('AuthStateChanges Error: ${snapshot.error}');
+                return const AuthScreen();
+              }
+
+              return const AuthScreen();
+            },
+          ),
+          isLoading ? const LoadingScreen() : const SizedBox(),
+        ],
       ),
     );
   }

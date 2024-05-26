@@ -5,7 +5,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inzultz/components/loading_indicator.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:inzultz/providers/app.dart';
@@ -31,7 +30,6 @@ class _SendScreenState extends ConsumerState<SendScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = ref.watch(appProvider).isLoading;
     var currentAuthUser = FirebaseAuth.instance.currentUser!;
 
     void manageContacts() async {
@@ -139,6 +137,10 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                 StreamBuilder(
                     stream: getContactRequest(),
                     builder: (context, snapshot) {
+                      if (!snapshot.hasData || snapshot.data == null) {
+                        return const Text("You have no contacts");
+                      }
+
                       if (snapshot.hasError) {
                         _log.severe(snapshot.error);
                       }
@@ -150,6 +152,10 @@ class _SendScreenState extends ConsumerState<SendScreen> {
                       return FutureBuilder(
                           future: getContacts(contactRequests),
                           builder: (context, snapshot) {
+                            if (!snapshot.hasData || snapshot.data == null) {
+                              return const Text("You have no contacts");
+                            }
+
                             if (snapshot.hasError) {
                               _log.severe(snapshot.error);
                             }
@@ -205,17 +211,19 @@ class _SendScreenState extends ConsumerState<SendScreen> {
   }
 }
 
-class SendButton extends StatelessWidget {
+class SendButton extends ConsumerWidget {
   final Contact? selectedContact;
   const SendButton({
     super.key,
     required this.selectedContact,
   });
 
-  Future<void> sendNotification() async {
+  Future<void> sendNotification(ref) async {
     if (selectedContact == null) {
       return;
     }
+    ref.read(appProvider.notifier).setLoading(true);
+
     _log.info("sending notification to ${selectedContact!.FCMToken}");
 
     final results = await FirebaseFunctions.instance
@@ -223,16 +231,17 @@ class SendButton extends StatelessWidget {
         .call({"FCMToken": selectedContact!.FCMToken});
 
     _log.info(results.data);
+    ref.read(appProvider.notifier).setLoading(false);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Center(
       child: SizedBox(
         width: MediaQuery.of(context).size.width,
         height: MediaQuery.of(context).size.width,
         child: ElevatedButton(
-          onPressed: sendNotification,
+          onPressed: () => {sendNotification(ref)},
           style: ButtonStyle(
             elevation: WidgetStateProperty.all(5),
             shape: WidgetStateProperty.all(
