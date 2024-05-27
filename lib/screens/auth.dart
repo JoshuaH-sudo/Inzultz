@@ -193,6 +193,8 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   _returnToPreviousScreen(credential) {
+    if (widget.mode == null) return;
+    
     log.info('Returning to previous screen');
     Navigator.of(context).pop(credential);
   }
