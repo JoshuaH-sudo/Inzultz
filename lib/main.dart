@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inzultz/screens/auth.dart';
-import 'package:inzultz/screens/send.dart';
+import 'package:inzultz/screens/router.dart';
 import 'package:inzultz/models/db_collection.dart';
 import 'firebase_options.dart';
 import 'package:logging/logging.dart';
@@ -60,7 +60,7 @@ void main() async {
   ));
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends ConsumerWidget {
   const MainApp({super.key});
 
   setFCMToken() async {
@@ -86,7 +86,7 @@ class MainApp extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'inzultz',
       theme: ThemeData().copyWith(
@@ -97,14 +97,16 @@ class MainApp extends StatelessWidget {
         // Can produce multiple values over time unlike FutureBuilder.
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          if (snapshot.hasData) {
+          if (snapshot.hasData && snapshot.data != null) {
             setFCMToken();
-            return const SendScreen();
+            return const RouterScreen();
           }
 
-          // if (snapshot.connectionState == ConnectionState.waiting) {
-          //   // return const SplashScreen();
-          // }
+          if (snapshot.hasError) {
+            log.severe('AuthStateChanges Error: ${snapshot.error}');
+            return const AuthScreen();
+          }
+
           return const AuthScreen();
         },
       ),

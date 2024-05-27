@@ -1,20 +1,24 @@
+import 'dart:ffi';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:inzultz/models/contact_request.dart';
+import 'package:inzultz/providers/app.dart';
 import 'package:inzultz/screens/add_contact.dart';
 import 'package:inzultz/models/db_collection.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('ManageRequestsScreen');
 
-class ManageRequests extends StatelessWidget {
+class ManageRequests extends ConsumerWidget {
   const ManageRequests({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     void addNewContact() async {
       Navigator.of(context).push(MaterialPageRoute(builder: (context) {
         return const AddContact();
@@ -47,24 +51,6 @@ class ManageRequests extends StatelessWidget {
 
       log.info('contactInformation: $contactInformation');
       return contactInformation;
-    }
-
-    acceptRequest(String id) async {
-      try {
-        FirebaseFunctions.instance.httpsCallable('updateContactRequestStatus')(
-            {"contactRequestId": id, "newStatus": "accepted"});
-      } catch (e) {
-        log.severe(e);
-      }
-    }
-
-    declineRequest(String id) async {
-      try {
-        FirebaseFunctions.instance.httpsCallable('updateContactRequestStatus')(
-            {"contactRequestId": id, "newStatus": "declined"});
-      } catch (e) {
-        log.severe(e);
-      }
     }
 
     return Scaffold(
@@ -129,6 +115,9 @@ class ManageRequests extends StatelessWidget {
                     return const Center(
                       child: CircularProgressIndicator(),
                     );
+                  } else {
+                    Future(
+                        () => ref.read(appProvider.notifier).setLoading(false));
                   }
 
                   log.info('snapshot: ${snapshot.data}');
@@ -136,7 +125,13 @@ class ManageRequests extends StatelessWidget {
                   final contactInformation = snapshot.data ?? [];
                   if (contactInformation.isEmpty) {
                     return const Center(
-                      child: Text('No requests information'),
+                      child: Text(
+                        'No requests information',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 20,
+                        ),
+                      ),
                     );
                   }
 
@@ -148,58 +143,89 @@ class ManageRequests extends StatelessWidget {
                         final contact = contactInformation[index];
                         final request = requestDocs[index];
                         final data = requestsData[index];
-                        return ListTile(
-                            title: Text(contact.name),
-                            subtitle: Text(contact.phoneNumber),
-                            leading: data.receiverId ==
-                                    FirebaseAuth.instance.currentUser!.uid
-                                ? const Icon(Icons.call_received_rounded)
-                                : const Icon(Icons.call_made_rounded),
-                            trailing: data.receiverId ==
-                                    FirebaseAuth.instance.currentUser!.uid
-                                ? PopupMenuButton<String>(
-                                    itemBuilder: (BuildContext context) {
-                                      return <PopupMenuEntry<String>>[
-                                        PopupMenuItem<String>(
-                                          value: 'decline',
-                                          child: Directionality(
-                                            textDirection: TextDirection.rtl,
-                                            child: TextButton.icon(
-                                              label: const Text('decline'),
-                                              icon: const Icon(Icons.delete),
-                                              style: TextButton.styleFrom(
-                                                iconColor: Colors.red,
-                                              ),
-                                              onPressed: () =>
-                                                  declineRequest(request.id),
-                                            ),
-                                          ),
-                                        ),
-                                        PopupMenuItem(
-                                          value: "accept",
-                                          child: Directionality(
-                                            textDirection: TextDirection.rtl,
-                                            child: TextButton.icon(
-                                              label: const Text("Accept"),
-                                              icon: const Icon(
-                                                Icons.check,
-                                              ),
-                                              onPressed: () =>
-                                                  acceptRequest(request.id),
-                                            ),
-                                          ),
-                                        )
-                                      ];
-                                    },
-                                    onSelected: (String value) {
-                                      // Handle dropdown item selection here
-                                      log.info('Selected: $value');
-                                    },
-                                  )
-                                : null);
+                        return RequestListItem(
+                            contact: contact, data: data, request: request);
                       });
                 });
           }),
     );
+  }
+}
+
+class RequestListItem extends ConsumerWidget {
+  const RequestListItem({
+    super.key,
+    required this.contact,
+    required this.data,
+    required this.request,
+  });
+
+  final Contact contact;
+  final ContactRequest data;
+  final QueryDocumentSnapshot<Map<String, dynamic>> request;
+
+  acceptRequest(String id) async {
+    try {
+      FirebaseFunctions.instance.httpsCallable('updateContactRequestStatus')(
+          {"contactRequestId": id, "newStatus": "accepted"});
+    } catch (e) {
+      log.severe(e);
+    }
+  }
+
+  declineRequest(String id) async {
+    try {
+      FirebaseFunctions.instance.httpsCallable('updateContactRequestStatus')(
+          {"contactRequestId": id, "newStatus": "declined"});
+    } catch (e) {
+      log.severe(e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ListTile(
+        title: Text(contact.name),
+        subtitle: Text(contact.phoneNumber),
+        leading: const Icon(Icons.call_received_rounded),
+        trailing: PopupMenuButton<String>(
+          itemBuilder: (BuildContext context) {
+            return <PopupMenuEntry<String>>[
+              PopupMenuItem(
+                value: "accept",
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: TextButton.icon(
+                      label: const Text("Accept"),
+                      icon: const Icon(
+                        Icons.check,
+                      ),
+                      onPressed: () => {
+                            Navigator.pop(context),
+                            ref.read(appProvider.notifier).setLoading(true),
+                            acceptRequest(request.id),
+                          }),
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'decline',
+                child: Directionality(
+                  textDirection: TextDirection.rtl,
+                  child: TextButton.icon(
+                      label: const Text('decline'),
+                      icon: const Icon(Icons.delete),
+                      style: TextButton.styleFrom(
+                        iconColor: Colors.red,
+                      ),
+                      onPressed: () => {
+                            Navigator.pop(context),
+                            ref.read(appProvider.notifier).setLoading(true),
+                            declineRequest(request.id),
+                          }),
+                ),
+              ),
+            ];
+          },
+        ));
   }
 }

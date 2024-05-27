@@ -2,24 +2,27 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:inzultz/models/db_collection.dart';
+import 'package:inzultz/providers/app.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('AddContactScreen');
 
-class AddContact extends StatefulWidget {
+class AddContact extends ConsumerStatefulWidget {
   const AddContact({super.key});
 
   @override
-  State<AddContact> createState() => _AddContactState();
+  ConsumerState<AddContact> createState() => _AddContactState();
 }
 
-class _AddContactState extends State<AddContact> {
+class _AddContactState extends ConsumerState<AddContact> {
   final _formKey = GlobalKey<FormState>();
   String _enteredPhoneNumber = '';
 
-  void onSubmit() async {
+  void onSubmit(WidgetRef ref) async {
+    ref.read(appProvider).setLoading(true);
     try {
       final isValid = _formKey.currentState!.validate();
       if (!isValid) {
@@ -37,7 +40,8 @@ class _AddContactState extends State<AddContact> {
         return showMessage("Please enter a phone number", isError: true);
       }
       if (_enteredPhoneNumber == currentUserData['phoneNumber']) {
-        return showMessage("You cannot add yourself as a contact", isError: true);
+        return showMessage("You cannot add yourself as a contact",
+            isError: true);
       }
 
       final response = await FirebaseFunctions.instance
@@ -58,6 +62,7 @@ class _AddContactState extends State<AddContact> {
       showMessage("Something went wrong", isError: true);
       log.severe(error);
     }
+    ref.read(appProvider).setLoading(false);
   }
 
   void showMessage(String message, {bool isError = false}) {
@@ -111,7 +116,7 @@ class _AddContactState extends State<AddContact> {
                           ),
                           const SizedBox(height: 12),
                           ElevatedButton(
-                            onPressed: onSubmit,
+                            onPressed: () => onSubmit(ref),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Theme.of(context)
                                   .colorScheme

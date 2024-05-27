@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inzultz/providers/app.dart';
 import 'package:inzultz/screens/add_contact.dart';
 import 'package:inzultz/screens/auth.dart';
 import 'package:inzultz/models/db_collection.dart';
@@ -8,11 +10,11 @@ import 'package:logging/logging.dart';
 
 final log = Logger('SettingsScreen');
 
-class ManageSettings extends StatelessWidget {
+class ManageSettings extends ConsumerWidget {
   const ManageSettings({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     void addNewContact() async {
       Navigator.of(context).push(MaterialPageRoute(builder: (context) {
         return const AddContact();
@@ -61,10 +63,11 @@ class ManageSettings extends StatelessWidget {
     void onDeleteUser() async {
       try {
         final newCred = await login();
-        log.info('newCred: $newCred');
         if (newCred == null) {
           return;
         }
+        
+        ref.read(appProvider.notifier).setLoading(true);
         await deleteDBUser();
         await deleteUsersContactRequests();
 
@@ -77,6 +80,7 @@ class ManageSettings extends StatelessWidget {
           log.severe('Failed to delete user: $error');
         }
       }
+      ref.read(appProvider.notifier).setLoading(false);
     }
 
     return Scaffold(
