@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inzultz/providers/app.dart';
 import 'package:inzultz/screens/add_contact.dart';
 import 'package:inzultz/models/db_collection.dart';
 import 'package:inzultz/utils.dart';
@@ -50,8 +51,7 @@ class ManageContacts extends ConsumerWidget {
               )
               .snapshots(),
           builder: (context, currentUserSnapshot) {
-            if (currentUserSnapshot.connectionState ==
-                ConnectionState.waiting) {
+            if (currentUserSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(
                 child: CircularProgressIndicator(),
               );
@@ -85,9 +85,13 @@ class ManageContacts extends ConsumerWidget {
             return FutureBuilder(
                 future: getContacts(currentUserSnapshot.data?.docs),
                 builder: (context, contactsSnapshot) {
-                  if (contactsSnapshot.connectionState ==
-                      ConnectionState.waiting) {
+                  if (contactsSnapshot.connectionState !=
+                      ConnectionState.done) {
                     return const Center(child: CircularProgressIndicator());
+                  } else {
+                    Future(
+                      () => ref.read(appProvider.notifier).setLoading(false),
+                    );
                   }
 
                   if (contactsSnapshot.hasError) {
@@ -146,6 +150,8 @@ class ManageContacts extends ConsumerWidget {
                         ),
                         direction: DismissDirection.endToStart,
                         onDismissed: (direction) {
+                          ref.read(appProvider.notifier).setLoading(true);
+
                           removeContact(contactsSnapshot.data![index].id);
                         },
                         child: ListTile(

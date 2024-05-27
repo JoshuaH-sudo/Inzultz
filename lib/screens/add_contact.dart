@@ -62,6 +62,7 @@ class _AddContactState extends ConsumerState<AddContact> {
       showMessage("Something went wrong", isError: true);
       log.severe(error);
     }
+    ref.read(appProvider).setLoading(false);
   }
 
   void showMessage(String message, {bool isError = false}) {
