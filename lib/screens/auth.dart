@@ -60,34 +60,41 @@ class _AuthScreenState extends State<AuthScreen> {
     }
     _formKey.currentState!.save();
     log.info('Form saved $_enteredPhoneNumber');
+    final response = await FirebaseFunctions.instance
+        .httpsCallable('checkPhoneNumberIsUsed')
+        .call({'phoneNumber': _enteredPhoneNumber});
 
-    if (_isSignup) {
-      final response = await FirebaseFunctions.instance
-          .httpsCallable('checkPhoneNumberIsUsed')
-          .call({'phoneNumber': _enteredPhoneNumber});
+    if (response.data['error'] != null) {
+      log.info('Error: ${response.data['error']}');
+      _showMessage(
+        'Unexpected error occurred, please try again.',
+        isError: true,
+      );
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
 
-      if (response.data['error'] != null) {
-        log.info('Error: ${response.data['error']}');
-        _showMessage(
-          'Unexpected error occurred, please try again.',
-          isError: true,
-        );
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
+    final isUsed = response.data['isUsed'];
 
-      if (response.data['isUsed']) {
-        log.info('Phone number is used');
-        _showMessage('Phone number is already in use', isError: true);
-        setState(() {
-          _isLoading = false;
-        });
-        return;
-      }
+    if (_isSignup && isUsed) {
+      log.info('Phone number is used');
+      _showMessage('Phone number is already in use, please login.', isError: true);
+      setState(() {
+        _isSignup = false;
+        _isLoading = false;
+      });
+      return;
+    }
 
-      log.info('Phone number is not used');
+    if (!_isSignup && !isUsed) {
+      _showMessage('You do not have an account, sign up first.', isError: true);
+      setState(() {
+        _isSignup = true;
+        _isLoading = false;
+      });
+      return;
     }
 
     await FirebaseAuth.instance.verifyPhoneNumber(
@@ -194,7 +201,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   _returnToPreviousScreen(credential) {
     if (widget.mode == null) return;
-    
+
     log.info('Returning to previous screen');
     Navigator.of(context).pop(credential);
   }
