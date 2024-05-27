@@ -121,90 +121,92 @@ class _SendScreenState extends ConsumerState<SendScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  "Tell,",
-                  style: TextStyle(fontSize: 20),
-                ),
-                const SizedBox(
-                  width: 8,
-                ),
-                StreamBuilder(
-                    stream: getContactRequest(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData || snapshot.data == null) {
-                        return const Text("You have no contacts");
-                      }
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Tell,",
+                    style: TextStyle(fontSize: 20),
+                  ),
+                  const SizedBox(
+                    width: 8,
+                  ),
+                  StreamBuilder(
+                      stream: getContactRequest(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data == null) {
+                          return const Text("You have no contacts");
+                        }
 
-                      if (snapshot.hasError) {
-                        _log.severe(snapshot.error);
-                      }
+                        if (snapshot.hasError) {
+                          _log.severe(snapshot.error);
+                        }
 
-                      _log.info(snapshot.data!.docs);
+                        _log.info(snapshot.data!.docs);
 
-                      var contactRequests = snapshot.data!.docs;
+                        var contactRequests = snapshot.data!.docs;
 
-                      return FutureBuilder(
-                          future: getContacts(contactRequests),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData || snapshot.data == null) {
-                              return const Text("You have no contacts");
-                            }
+                        return FutureBuilder(
+                            future: getContacts(contactRequests),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData || snapshot.data == null) {
+                                return const Text("You have no contacts");
+                              }
 
-                            if (snapshot.hasError) {
-                              _log.severe(snapshot.error);
-                            }
+                              if (snapshot.hasError) {
+                                _log.severe(snapshot.error);
+                              }
 
-                            final contacts = snapshot.data;
+                              final contacts = snapshot.data;
 
-                            return MenuAnchor(
-                              builder: (context, controller, child) {
-                                return ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    minimumSize: const Size(150, 50),
-                                  ),
-                                  onPressed: () {
-                                    if (controller.isOpen) {
-                                      controller.close();
-                                    } else {
-                                      controller.open();
-                                    }
-                                  },
-                                  child: Text(
-                                    _selectedContact?.name ??
-                                        "Select a contact",
-                                    maxLines: 1,
-                                    style: const TextStyle(
-                                      fontSize: 20,
+                              return MenuAnchor(
+                                builder: (context, controller, child) {
+                                  return ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      minimumSize: const Size(150, 50),
                                     ),
-                                  ),
-                                );
-                              },
-                              menuChildren: contacts!.map((contact) {
-                                return MenuItemButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      _selectedContact = contact;
-                                    });
-                                  },
-                                  child: Text(contact.name),
-                                );
-                              }).toList(),
-                            );
-                          });
-                    }),
-              ],
-            ),
-            const SizedBox(
-              height: 8,
-            ),
-            SendButton(selectedContact: _selectedContact),
-          ],
+                                    onPressed: () {
+                                      if (controller.isOpen) {
+                                        controller.close();
+                                      } else {
+                                        controller.open();
+                                      }
+                                    },
+                                    child: Text(
+                                      _selectedContact?.name ??
+                                          "Select a contact",
+                                      maxLines: 1,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                menuChildren: contacts!.map((contact) {
+                                  return MenuItemButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedContact = contact;
+                                      });
+                                    },
+                                    child: Text(contact.name),
+                                  );
+                                }).toList(),
+                              );
+                            });
+                      }),
+                ],
+              ),
+              const SizedBox(
+                height: 8,
+              ),
+              SendButton(selectedContact: _selectedContact),
+            ],
+          ),
         ),
       ),
     );

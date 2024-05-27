@@ -6,10 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inzultz/components/loading_indicator.dart';
-import 'package:inzultz/providers/app.dart';
 import 'package:inzultz/screens/auth.dart';
-import 'package:inzultz/screens/send.dart';
+import 'package:inzultz/screens/router.dart';
 import 'package:inzultz/models/db_collection.dart';
 import 'firebase_options.dart';
 import 'package:logging/logging.dart';
@@ -89,34 +87,28 @@ class MainApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isLoading = ref.watch(appProvider).isLoading;
     return MaterialApp(
       title: 'inzultz',
       theme: ThemeData().copyWith(
         colorScheme: ColorScheme.fromSeed(
             seedColor: const Color.fromARGB(255, 63, 17, 177)),
       ),
-      home: Stack(
-        children: [
-          StreamBuilder(
-            // Can produce multiple values over time unlike FutureBuilder.
-            stream: FirebaseAuth.instance.authStateChanges(),
-            builder: (context, snapshot) {
-              if (snapshot.hasData && snapshot.data != null) {
-                setFCMToken();
-                return const SendScreen();
-              }
+      home: StreamBuilder(
+        // Can produce multiple values over time unlike FutureBuilder.
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            setFCMToken();
+            return const RouterScreen();
+          }
 
-              if (snapshot.hasError) {
-                log.severe('AuthStateChanges Error: ${snapshot.error}');
-                return const AuthScreen();
-              }
+          if (snapshot.hasError) {
+            log.severe('AuthStateChanges Error: ${snapshot.error}');
+            return const AuthScreen();
+          }
 
-              return const AuthScreen();
-            },
-          ),
-          isLoading ? const LoadingScreen() : const SizedBox(),
-        ],
+          return const AuthScreen();
+        },
       ),
     );
   }

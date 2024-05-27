@@ -4,7 +4,7 @@ import 'package:logging/logging.dart';
 
 final log = Logger('AppProvider');
 class App extends ChangeNotifier {
-  bool _isLoading = false;
+  bool _isLoading = true;
 
   bool get isLoading => _isLoading;
 
