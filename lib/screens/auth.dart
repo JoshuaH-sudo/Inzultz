@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:inzultz/main.dart';
+import 'package:inzultz/screens/verify.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('AuthScreen');
@@ -22,7 +23,6 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   var _isLoading = false;
-  var _isVerifying = false;
   var _isSignup = false;
 
   final _formKey = GlobalKey<FormState>();
@@ -30,7 +30,7 @@ class _AuthScreenState extends State<AuthScreen> {
   var _enteredPhoneNumber = '';
 
   String? _verificationCode;
-  // int? _resendToken;
+  int? _resendToken;
   String? _smsCode;
 
   @override
@@ -44,7 +44,16 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     }
   }
-
+  _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+  
   _onSubmit() async {
     log.info('Submitting');
     setState(() {
@@ -93,6 +102,8 @@ class _AuthScreenState extends State<AuthScreen> {
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: _enteredPhoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
+        // ANDROID ONLY!
+        // Sign the user in (or link) with the auto-generated credential
         log.info('Verification completed');
 
         if (_isSignup) {
@@ -117,60 +128,31 @@ class _AuthScreenState extends State<AuthScreen> {
           _isVerifying = false;
           _isLoading = false;
         });
+        _showMessage('Failed to verify phone number', isError: true);
       },
       codeSent: (String verificationId, int? resendToken) {
         log.info('Code sent');
+
         setState(() {
           _isVerifying = true;
           _isLoading = false;
           _verificationCode = verificationId;
-          // _resendToken = resendToken;
+          _resendToken = resendToken;
         });
-        _formKey.currentState!.reset();
+
+        // _formKey.currentState!.reset();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+              builder: (context) => VerifyScreen(
+                    verificationId: verificationId,
+                    phoneNumber: _enteredPhoneNumber,
+                    resendToken: resendToken,
+                  )),
+        );
       },
       codeAutoRetrievalTimeout: (String verificationId) {},
     );
   }
-
-  _sendSMSCode() async {
-    setState(() {
-      _isLoading = true;
-    });
-    final isValid = _formKey.currentState!.validate();
-    if (!isValid) {
-      return;
-    }
-    _formKey.currentState!.save();
-
-    final credential = PhoneAuthProvider.credential(
-      verificationId: _verificationCode!,
-      smsCode: _smsCode!,
-    );
-
-    final userCreds =
-        await FirebaseAuth.instance.signInWithCredential(credential);
-
-    if (_isSignup) {
-      try {
-        await _createUser();
-      } catch (error) {
-        log.severe('Unable to add user $error');
-        _showMessage(
-          'Unexpected error occurred, please try again.',
-          isError: true,
-        );
-      }
-    }
-
-    _formKey.currentState!.reset();
-    setState(() {
-      _isVerifying = false;
-      _isLoading = false;
-    });
-
-    _returnToPreviousScreen(userCreds);
-  }
-
   _createUser() async {
     final fcm = FirebaseMessaging.instance;
     final notificationSettings = await fcm.requestPermission();
@@ -194,20 +176,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
   _returnToPreviousScreen(credential) {
     if (widget.mode == null) return;
-    
+
     log.info('Returning to previous screen');
     Navigator.of(context).pop(credential);
   }
 
-  _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -282,40 +256,6 @@ class _AuthScreenState extends State<AuthScreen> {
             ))
     ];
 
-    var verifyingContent = [
-      TextFormField(
-        keyboardType: TextInputType.number,
-        decoration: const InputDecoration(
-          labelText: 'Verification Code',
-          border: OutlineInputBorder(
-            borderSide: BorderSide(),
-          ),
-        ),
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Please enter a verification code';
-          }
-          return null;
-        },
-        initialValue: '',
-        onSaved: (value) {
-          setState(() {
-            _smsCode = value!;
-          });
-        },
-      ),
-      const SizedBox(height: 12),
-      ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        ),
-        onPressed: _sendSMSCode,
-        child: const Text("Verify"),
-      ),
-      const SizedBox(height: 6),
-      // TextButton(onPressed: () {}, child: const Text("Resend code")),
-    ];
-
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
       body: Center(
@@ -333,10 +273,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (_isVerifying)
-                            ...verifyingContent
-                          else
-                            ...loginContent,
+                          ...loginContent
                         ],
                       ),
                     ),
