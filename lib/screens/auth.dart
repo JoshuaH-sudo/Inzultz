@@ -30,7 +30,7 @@ class _AuthScreenState extends State<AuthScreen> {
   var _enteredPhoneNumber = '';
 
   String? _verificationCode;
-  // int? _resendToken;
+  int? _resendToken;
   String? _smsCode;
 
   @override
@@ -90,26 +90,39 @@ class _AuthScreenState extends State<AuthScreen> {
       log.info('Phone number is not used');
     }
 
+    _login();
+  }
+
+  _login() async {
     await FirebaseAuth.instance.verifyPhoneNumber(
+      forceResendingToken: _resendToken,
       phoneNumber: _enteredPhoneNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
+        // Android only: if the sms code is automatically detected
         log.info('Verification completed');
 
         if (_isSignup) {
-          await analytics.logSignUp(signUpMethod: "phone", parameters: {
-            'phone': _enteredPhoneNumber,
-            'name': _enteredName,
-          });
+          await analytics.logSignUp(
+            signUpMethod: "phone",
+            parameters: {
+              'phone': _enteredPhoneNumber,
+              'name': _enteredName,
+            },
+          );
         } else {
-          await analytics.logLogin(loginMethod: 'phone', parameters: {
-            'phone': _enteredPhoneNumber,
-            'name': _enteredName,
-          });
+          await analytics.logLogin(
+            loginMethod: 'phone',
+            parameters: {
+              'phone': _enteredPhoneNumber,
+              'name': _enteredName,
+            },
+          );
         }
 
-        final userCreds =
+        final userCredentials =
             await FirebaseAuth.instance.signInWithCredential(credential);
-        _returnToPreviousScreen(userCreds);
+
+        _returnToPreviousScreen(userCredentials);
       },
       verificationFailed: (FirebaseAuthException e) {
         log.info('Failed to verify phone number: ${e.message}');
@@ -124,11 +137,17 @@ class _AuthScreenState extends State<AuthScreen> {
           _isVerifying = true;
           _isLoading = false;
           _verificationCode = verificationId;
-          // _resendToken = resendToken;
+          _resendToken = resendToken;
         });
         _formKey.currentState!.reset();
       },
-      codeAutoRetrievalTimeout: (String verificationId) {},
+      codeAutoRetrievalTimeout: (String verificationId) {
+        setState(() {
+          _isVerifying = true;
+          _isLoading = false;
+          _verificationCode = verificationId;
+        });
+      },
     );
   }
 
@@ -194,7 +213,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   _returnToPreviousScreen(credential) {
     if (widget.mode == null) return;
-    
+
     log.info('Returning to previous screen');
     Navigator.of(context).pop(credential);
   }
@@ -313,7 +332,10 @@ class _AuthScreenState extends State<AuthScreen> {
         child: const Text("Verify"),
       ),
       const SizedBox(height: 6),
-      // TextButton(onPressed: () {}, child: const Text("Resend code")),
+      TextButton(
+        onPressed: _login,
+        child: const Text("Resend code"),
+      ),
     ];
 
     return Scaffold(
