@@ -266,6 +266,12 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
         initialCountryCode: 'AU',
+        validator: (phone) {
+          if (phone == null || phone.completeNumber.isEmpty) {
+            return 'Please enter a phone number';
+          }
+          return null;
+        },
         onSaved: (phone) {
           setState(() {
             _enteredPhoneNumber = phone!.completeNumber;
