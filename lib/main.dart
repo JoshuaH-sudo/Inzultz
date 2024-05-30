@@ -11,7 +11,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:inzultz/screens/auth.dart';
 import 'package:inzultz/screens/router.dart';
 import 'package:inzultz/models/db_collection.dart';
-import 'firebase_options.dart';
+import '../build/firebase_options.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('MainScreen');
