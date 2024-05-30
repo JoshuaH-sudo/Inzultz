@@ -1,4 +1,4 @@
-package com.example.inzultz
+package joshua.hoban.inzultz
 
 import io.flutter.embedding.android.FlutterActivity
 
