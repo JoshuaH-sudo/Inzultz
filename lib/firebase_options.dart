@@ -54,9 +54,10 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBboGM5PbE2HJ_v_Jf3r2NI36TvsKFoRZA',
-    appId: '1:443397670851:android:e8825f23f79ac053eadf76',
+    appId: '1:443397670851:android:c5359cef3c968e2eeadf76',
     messagingSenderId: '443397670851',
     projectId: 'inzultz-72289',
     storageBucket: 'inzultz-72289.appspot.com',
   );
+
 }
