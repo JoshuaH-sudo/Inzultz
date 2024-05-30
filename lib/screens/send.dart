@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:inzultz/providers/app.dart';
+import 'package:inzultz/screens/banner_example.dart';
 import 'package:inzultz/screens/manage_contacts.dart';
 import 'package:inzultz/screens/manage_requests.dart';
 import 'package:inzultz/screens/manage_settings.dart';
@@ -115,6 +116,14 @@ class _SendScreenState extends ConsumerState<SendScreen> {
             icon: const Icon(Icons.logout),
             onPressed: () {
               FirebaseAuth.instance.signOut();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.abc),
+            onPressed: () => {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) {
+                return const BannerExample();
+              }))
             },
           ),
         ],

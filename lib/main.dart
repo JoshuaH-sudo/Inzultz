@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:inzultz/screens/auth.dart';
 import 'package:inzultz/screens/router.dart';
 import 'package:inzultz/models/db_collection.dart';
@@ -65,6 +66,9 @@ void main() async {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };
+
+  MobileAds.instance.initialize();
+
   runApp(const ProviderScope(
     child: MainApp(),
   ));
