@@ -9,6 +9,25 @@
       "client_info": {
         "mobilesdk_app_id": "1:443397670851:android:e8825f23f79ac053eadf76",
         "android_client_info": {
+          "package_name": "com.example.inzultz"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBboGM5PbE2HJ_v_Jf3r2NI36TvsKFoRZA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:443397670851:android:c5359cef3c968e2eeadf76",
+        "android_client_info": {
           "package_name": "joshua.hoban.inzultz"
         }
       },

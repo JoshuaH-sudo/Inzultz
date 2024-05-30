@@ -125,6 +125,10 @@ class _SendScreenState extends ConsumerState<SendScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              TextButton(
+                onPressed: () => throw Exception(),
+                child: const Text("Throw Test Exception"),
+              ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
