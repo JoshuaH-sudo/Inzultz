@@ -34,12 +34,15 @@ void main() async {
       print('Could not connect to emulators: $e');
     }
   }
+  await FirebaseAnalytics.instance.setDefaultEventParameters(<String, dynamic>{
+    'app_version': '1.0.0+3',
+  });
 
   Logger.root.level = Level.ALL; // defaults to Level.INFO
   Logger.root.onRecord.listen((record) async {
     // ignore: avoid_print
     print('${record.level.name}: ${record.time}: ${record.message}');
-    await FirebaseAnalytics.instance.logEvent(name: "app_log", parameters: {
+    await analytics.logEvent(name: "app_log", parameters: {
       'level': record.level.name,
       'time': record.time.toString(),
       'message': record.message,
@@ -122,7 +125,7 @@ class MainApp extends ConsumerWidget {
               name: 'name',
               value: snapshot.data?.displayName,
             );
-            
+
             setFCMToken();
             return const RouterScreen();
           }
