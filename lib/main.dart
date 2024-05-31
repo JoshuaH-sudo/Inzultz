@@ -36,9 +36,14 @@ void main() async {
   }
 
   Logger.root.level = Level.ALL; // defaults to Level.INFO
-  Logger.root.onRecord.listen((record) {
+  Logger.root.onRecord.listen((record) async {
     // ignore: avoid_print
     print('${record.level.name}: ${record.time}: ${record.message}');
+    await FirebaseAnalytics.instance.logEvent(name: "app_log", parameters: {
+      'level': record.level.name,
+      'time': record.time.toString(),
+      'message': record.message,
+    });
   });
 
   FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) async {
@@ -112,6 +117,12 @@ class MainApp extends ConsumerWidget {
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data != null) {
+            analytics.setUserId(id: snapshot.data?.uid);
+            analytics.setUserProperty(
+              name: 'name',
+              value: snapshot.data?.displayName,
+            );
+            
             setFCMToken();
             return const RouterScreen();
           }

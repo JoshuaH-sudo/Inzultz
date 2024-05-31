@@ -1,10 +1,12 @@
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:inzultz/main.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:inzultz/providers/app.dart';
@@ -28,6 +30,21 @@ class SendScreen extends ConsumerStatefulWidget {
 
 class _SendScreenState extends ConsumerState<SendScreen> {
   Contact? _selectedContact;
+
+  void getConsent() async {
+     await analytics.setConsent(
+      adStorageConsentGranted: true,
+      adUserDataConsentGranted: true,
+      adPersonalizationSignalsConsentGranted: true,
+    );
+    _log.info("Consent set");
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getConsent();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,6 +132,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
+              FirebaseAnalytics.instance.logEvent(name: "logout");
               FirebaseAuth.instance.signOut();
             },
           ),
