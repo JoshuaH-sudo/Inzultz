@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -59,6 +60,7 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
     _formKey.currentState!.save();
+
     log.info('Form saved $_enteredPhoneNumber');
     final response = await FirebaseFunctions.instance
         .httpsCallable('checkPhoneNumberIsUsed')
@@ -66,6 +68,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
     if (response.data['error'] != null) {
       log.info('Error: ${response.data['error']}');
+      FirebaseCrashlytics.instance.recordError(
+        response.data['error'],
+        StackTrace.current,
+      );
       _showMessage(
         'Unexpected error occurred, please try again.',
         isError: true,
@@ -77,7 +83,9 @@ class _AuthScreenState extends State<AuthScreen> {
     }
 
     final isUsed = response.data['isUsed'];
+    log.info('isSignup: $_isSignup, isUsed: $isUsed');
 
+    // If the user is trying to sign up and the phone number is used, proceed to login.
     if (_isSignup && isUsed) {
       log.info('Phone number is used');
       _showMessage('Phone number is already in use, please login.', isError: true);
@@ -88,6 +96,7 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
+    // If the user is trying to login and the phone number is not used, prompt to sign up.
     if (!_isSignup && !isUsed) {
       _showMessage('You do not have an account, sign up first.', isError: true);
       setState(() {
@@ -133,6 +142,10 @@ class _AuthScreenState extends State<AuthScreen> {
       },
       verificationFailed: (FirebaseAuthException e) {
         log.info('Failed to verify phone number: ${e.message}');
+        FirebaseCrashlytics.instance.recordError(
+          e,
+          StackTrace.current,
+        );
         setState(() {
           _isVerifying = false;
           _isLoading = false;

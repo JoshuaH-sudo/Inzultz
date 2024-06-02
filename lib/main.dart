@@ -7,10 +7,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:inzultz/firebase_options.dart';
 import 'package:inzultz/screens/auth.dart';
 import 'package:inzultz/screens/router.dart';
 import 'package:inzultz/models/db_collection.dart';
-import 'firebase_options.dart';
 import 'package:logging/logging.dart';
 
 final log = Logger('MainScreen');
@@ -33,11 +34,19 @@ void main() async {
       print('Could not connect to emulators: $e');
     }
   }
+  await FirebaseAnalytics.instance.setDefaultEventParameters(<String, dynamic>{
+    'app_version': '1.0.0+3',
+  });
 
   Logger.root.level = Level.ALL; // defaults to Level.INFO
-  Logger.root.onRecord.listen((record) {
+  Logger.root.onRecord.listen((record) async {
     // ignore: avoid_print
     print('${record.level.name}: ${record.time}: ${record.message}');
+    await analytics.logEvent(name: "app_log", parameters: {
+      'level': record.level.name,
+      'time': record.time.toString(),
+      'message': record.message,
+    });
   });
 
   FirebaseMessaging.instance.onTokenRefresh.listen((fcmToken) async {
@@ -65,6 +74,9 @@ void main() async {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };
+
+  MobileAds.instance.initialize();
+
   runApp(const ProviderScope(
     child: MainApp(),
   ));
@@ -108,6 +120,12 @@ class MainApp extends ConsumerWidget {
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data != null) {
+            analytics.setUserId(id: snapshot.data?.uid);
+            analytics.setUserProperty(
+              name: 'name',
+              value: snapshot.data?.displayName,
+            );
+
             setFCMToken();
             return const RouterScreen();
           }
