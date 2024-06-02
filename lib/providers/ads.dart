@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -16,10 +17,12 @@ class GoogleAdsProvider extends ChangeNotifier {
   Orientation? currentOrientation;
 
   // Test ad unit ID.
-  final String adUnitId = Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/9214589741'
-      : 'ca-app-pub-3940256099942544/2435281174';
-  
+  final String adUnitId = kDebugMode
+      ? Platform.isAndroid
+          ? 'ca-app-pub-3940256099942544/9214589741'
+          : 'ca-app-pub-3940256099942544/2435281174'
+      : 'ca-app-pub-1838944538968403/4355464124';
+
   void setupMobileAdsSDK() {
     consentManager.gatherConsent((consentGatheringError) {
       if (consentGatheringError != null) {
