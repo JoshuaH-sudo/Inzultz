@@ -21,7 +21,6 @@ class ManageSettings extends ConsumerStatefulWidget {
 }
 
 class _ManageSettingsState extends ConsumerState<ManageSettings> {
-  static const privacySettingsText = 'Privacy Settings';
   final _consentManager = ConsentManager();
   var _isMobileAdsInitializeCalled = false;
 
@@ -156,7 +155,7 @@ class _ManageSettingsState extends ConsumerState<ManageSettings> {
                   }
                 });
               },
-              child: const Text('Update Privacy Settings'),
+              child: const Text('Privacy Settings'),
             ),
           ),
           Center(
