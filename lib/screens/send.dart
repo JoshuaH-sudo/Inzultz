@@ -43,7 +43,6 @@ class _SendScreenState extends ConsumerState<SendScreen> {
   @override
   void initState() {
     super.initState();
-    // ref.read(googleAdsProvider.notifier).setupProvider(context);
     getConsent();
   }
 

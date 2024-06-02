@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -68,6 +71,7 @@ class BannerExampleState extends ConsumerState<BottomAd> {
         MediaQuery.sizeOf(context).width.truncate());
 
     if (size == null) {
+      log.warning('Unable to get adaptive banner size.');
       // Unable to get width of anchored banner.
       return;
     }
@@ -93,7 +97,12 @@ class BannerExampleState extends ConsumerState<BottomAd> {
         // Called when an ad removes an overlay that covers the screen.
         onAdClosed: (Ad ad) {},
         // Called when an impression occurs on the ad.
-        onAdImpression: (Ad ad) {},
+        onAdImpression: (Ad ad) async {
+          await FirebaseAnalytics.instance.logAdImpression(
+            adPlatform: Platform.operatingSystem,
+            adSource: ad.adUnitId,
+          );
+        },
       ),
     ).load();
   }
