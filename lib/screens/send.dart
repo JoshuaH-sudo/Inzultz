@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:inzultz/components/banner_ad.dart';
+import 'package:inzultz/components/bottom_ad.dart';
 import 'package:inzultz/main.dart';
 import 'package:inzultz/models/contact.dart';
 import 'package:cloud_functions/cloud_functions.dart';
