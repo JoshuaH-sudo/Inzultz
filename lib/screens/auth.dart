@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:intl_phone_field/countries.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:inzultz/main.dart';
 import 'package:logging/logging.dart';
@@ -29,6 +30,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   var _enteredName = '';
   var _enteredPhoneNumber = '';
+  Country? _countryCode;
 
   String? _verificationCode;
   int? _resendToken;
@@ -88,7 +90,8 @@ class _AuthScreenState extends State<AuthScreen> {
     // If the user is trying to sign up and the phone number is used, proceed to login.
     if (_isSignup && isUsed) {
       log.info('Phone number is used');
-      _showMessage('Phone number is already in use, please login.', isError: true);
+      _showMessage('Phone number is already in use, please login.',
+          isError: true);
       setState(() {
         _isSignup = false;
         _isLoading = false;
@@ -249,6 +252,11 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     var signupContext = [
       TextFormField(
@@ -285,7 +293,14 @@ class _AuthScreenState extends State<AuthScreen> {
             borderSide: BorderSide(),
           ),
         ),
-        initialCountryCode: 'AU',
+        initialCountryCode: _countryCode != null ? _countryCode!.code : 'US',
+        initialValue: _enteredPhoneNumber,
+        onCountryChanged: (value) {
+          setState(() {
+            _countryCode = value;
+          });
+        },
+        languageCode: "en",
         validator: (phone) {
           if (phone == null || phone.completeNumber.isEmpty) {
             return 'Please enter a phone number';
@@ -294,7 +309,8 @@ class _AuthScreenState extends State<AuthScreen> {
         },
         onSaved: (phone) {
           setState(() {
-            _enteredPhoneNumber = phone!.completeNumber;
+            _enteredPhoneNumber =
+                "${phone!.countryCode}${phone.number.replaceFirst(RegExp(r'^0+'), '')}";
           });
         },
       ),
@@ -361,6 +377,15 @@ class _AuthScreenState extends State<AuthScreen> {
       TextButton(
         onPressed: _login,
         child: const Text("Resend code"),
+      ),
+      const SizedBox(height: 6),
+      TextButton(
+        onPressed: () {
+          setState(() {
+            _isVerifying = false;
+          });
+        },
+        child: const Text("Cancel"),
       ),
     ];
 
