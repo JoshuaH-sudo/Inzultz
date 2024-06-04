@@ -8,6 +8,7 @@ import 'package:intl_phone_field/countries.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:inzultz/main.dart';
 import 'package:logging/logging.dart';
+import 'package:posthog_flutter/posthog_flutter.dart';
 
 final log = Logger('AuthScreen');
 
@@ -189,8 +190,19 @@ class _AuthScreenState extends State<AuthScreen> {
       smsCode: _smsCode!,
     );
 
-    final userCreds =
-        await FirebaseAuth.instance.signInWithCredential(credential);
+    var userCreds;
+    try {
+      userCreds = await FirebaseAuth.instance.signInWithCredential(credential);
+
+      Posthog().identify(userId: userCreds.user!.uid, userProperties: {
+        'phone': userCreds.user!.phoneNumber!,
+        'name': userCreds.user!.displayName!,
+      });
+    } catch (error) {
+      log.severe('Failed to sign in with credential: $error');
+      _showMessage('Failed to sign in with credential', isError: true);
+      return;
+    }
 
     if (_isSignup) {
       try {
@@ -201,6 +213,7 @@ class _AuthScreenState extends State<AuthScreen> {
           'Unexpected error occurred, please try again.',
           isError: true,
         );
+        await FirebaseAuth.instance.signOut();
       }
     }
 

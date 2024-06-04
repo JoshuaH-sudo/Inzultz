@@ -13,6 +13,7 @@ import 'package:inzultz/screens/auth.dart';
 import 'package:inzultz/screens/router.dart';
 import 'package:inzultz/models/db_collection.dart';
 import 'package:logging/logging.dart';
+import 'package:posthog_flutter/posthog_flutter.dart';
 
 final log = Logger('MainScreen');
 FirebaseAnalytics analytics = FirebaseAnalytics.instance;
@@ -110,6 +111,10 @@ class MainApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
+      navigatorObservers: [
+        // The PosthogObserver records screen views automatically
+        PosthogObserver(),
+      ],
       title: 'inzultz',
       theme: ThemeData().copyWith(
         colorScheme: ColorScheme.fromSeed(
