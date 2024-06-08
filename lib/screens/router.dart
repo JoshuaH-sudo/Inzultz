@@ -18,14 +18,13 @@ final _router = GoRouter(
       ),
     ),
     GoRoute(
-        path: '/',
-        builder: (context, state) => const SendScreen(),
-        routes: [
-          GoRoute(
-            path: '/settings',
-            builder: (context, state) => const ManageSettings(),
-          )
-        ]),
+      path: '/',
+      builder: (context, state) => const SendScreen(),
+    ),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const ManageSettings(),
+    )
   ],
   redirect: (context, state) async {
     if (FirebaseAuth.instance.currentUser == null) {
