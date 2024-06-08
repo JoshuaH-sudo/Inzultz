@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl_phone_field/countries.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:inzultz/main.dart';
@@ -205,26 +206,28 @@ class _AuthScreenState extends State<AuthScreen> {
     }
     _formKey.currentState!.save();
 
-    print('SMS Code: $smsCode');
-
     final credential = PhoneAuthProvider.credential(
       verificationId: _verificationCode!,
       smsCode: smsCode,
     );
 
-    var userCreds;
+    UserCredential userCredentials;
     try {
-      userCreds = await FirebaseAuth.instance.signInWithCredential(credential);
+      userCredentials =
+          await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (error) {
       log.severe('Failed to sign in with credential: $error');
       _showMessage('Failed to sign in with credential', isError: true);
       return;
     }
 
-    Posthog().identify(userId: userCreds.user!.uid, userProperties: {
-      'phone': userCreds.user!.phoneNumber!,
-      'name': userCreds.user!.displayName!,
-    });
+    if (userCredentials.user != null) {
+      log.info('User signed in: ${userCredentials.user}');
+      Posthog().identify(userId: userCredentials.user!.uid, userProperties: {
+        'phone': userCredentials.user!.phoneNumber!,
+        'name': userCredentials.user!.displayName ?? 'unknown',
+      });
+    }
 
     if (_isSignup) {
       try {
@@ -244,7 +247,7 @@ class _AuthScreenState extends State<AuthScreen> {
       _isLoading = false;
     });
 
-    _returnToPreviousScreen(userCreds);
+    _returnToPreviousScreen(userCredentials);
   }
 
   _createUser() async {
@@ -266,13 +269,15 @@ class _AuthScreenState extends State<AuthScreen> {
       'phoneNumber': _enteredPhoneNumber,
       'FCMToken': token,
     });
+
+    await FirebaseAuth.instance.currentUser!.updateDisplayName(_enteredName);
   }
 
   _returnToPreviousScreen(credential) {
-    // if (widget.mode == null) return;
+    if (widget.mode == null) GoRouter.of(context).replace('/');
 
     log.info('Returning to previous screen');
-    Navigator.of(context).pop(credential);
+    GoRouter.of(context).pop(credential);
   }
 
   _showMessage(String message, {bool isError = false}) {

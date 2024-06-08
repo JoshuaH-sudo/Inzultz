@@ -5,25 +5,31 @@ import 'package:go_router/go_router.dart';
 import 'package:inzultz/components/loading_indicator.dart';
 import 'package:inzultz/providers/app.dart';
 import 'package:inzultz/screens/auth.dart';
+import 'package:inzultz/screens/manage_settings.dart';
 import 'package:inzultz/screens/send.dart';
 
 // GoRouter configuration
 final _router = GoRouter(
   routes: [
     GoRoute(
-      path: '/',
-      builder: (context, state) => const SendScreen(),
+      path: '/auth',
+      builder: (context, GoRouterState state) => AuthScreen(
+        mode: (state.extra as Map?)?["mode"] as AuthMode?,
+      ),
     ),
     GoRoute(
-      path: '/auth',
-      builder: (context, state) => const AuthScreen(),
-    ),
+        path: '/',
+        builder: (context, state) => const SendScreen(),
+        routes: [
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const ManageSettings(),
+          )
+        ]),
   ],
   redirect: (context, state) async {
     if (FirebaseAuth.instance.currentUser == null) {
       return '/auth';
-    } else {
-      return '/';
     }
   },
 );
