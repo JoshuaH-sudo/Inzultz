@@ -205,6 +205,8 @@ class _AuthScreenState extends State<AuthScreen> {
     }
     _formKey.currentState!.save();
 
+    print('SMS Code: $smsCode');
+
     final credential = PhoneAuthProvider.credential(
       verificationId: _verificationCode!,
       smsCode: smsCode,
@@ -213,16 +215,16 @@ class _AuthScreenState extends State<AuthScreen> {
     var userCreds;
     try {
       userCreds = await FirebaseAuth.instance.signInWithCredential(credential);
-
-      Posthog().identify(userId: userCreds.user!.uid, userProperties: {
-        'phone': userCreds.user!.phoneNumber!,
-        'name': userCreds.user!.displayName!,
-      });
     } catch (error) {
       log.severe('Failed to sign in with credential: $error');
       _showMessage('Failed to sign in with credential', isError: true);
       return;
     }
+
+    Posthog().identify(userId: userCreds.user!.uid, userProperties: {
+      'phone': userCreds.user!.phoneNumber!,
+      'name': userCreds.user!.displayName!,
+    });
 
     if (_isSignup) {
       try {
@@ -267,7 +269,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   _returnToPreviousScreen(credential) {
-    if (widget.mode == null) return;
+    // if (widget.mode == null) return;
 
     log.info('Returning to previous screen');
     Navigator.of(context).pop(credential);
