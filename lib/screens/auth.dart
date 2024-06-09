@@ -149,20 +149,29 @@ class _AuthScreenState extends State<AuthScreen> {
             parameters: {
               'phone': _enteredPhoneNumber,
               'name': _enteredName,
+              'auto': true
             },
           );
+
+          await _createUser();
         } else {
           await analytics.logLogin(
             loginMethod: 'phone',
             parameters: {
               'phone': _enteredPhoneNumber,
               'name': _enteredName,
+              'auto': true
             },
           );
         }
 
         final userCredentials =
             await FirebaseAuth.instance.signInWithCredential(credential);
+
+        Posthog().identify(userId: userCredentials.user!.uid, userProperties: {
+          'phone': userCredentials.user!.phoneNumber!,
+          'name': userCredentials.user!.displayName ?? 'unknown',
+        });
 
         _returnToPreviousScreen(userCredentials);
       },
@@ -221,13 +230,11 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
-    if (userCredentials.user != null) {
-      log.info('User signed in: ${userCredentials.user}');
-      Posthog().identify(userId: userCredentials.user!.uid, userProperties: {
-        'phone': userCredentials.user!.phoneNumber!,
-        'name': userCredentials.user!.displayName ?? 'unknown',
-      });
-    }
+    log.info('User signed in: ${userCredentials.user}');
+    Posthog().identify(userId: userCredentials.user!.uid, userProperties: {
+      'phone': userCredentials.user!.phoneNumber!,
+      'name': userCredentials.user!.displayName ?? 'unknown',
+    });
 
     if (_isSignup) {
       try {
@@ -274,10 +281,18 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   _returnToPreviousScreen(credential) {
-    if (widget.mode == null) GoRouter.of(context).replace('/');
+    if (widget.mode == null) return GoRouter.of(context).replace('/');
 
     log.info('Returning to previous screen');
-    GoRouter.of(context).pop(credential);
+    try {
+      GoRouter.of(context).pop(credential);
+    } catch (error) {
+      log.severe('Failed to return to previous screen: $error');
+      FirebaseCrashlytics.instance.recordError(
+        error,
+        StackTrace.current,
+      );
+    }
   }
 
   _showMessage(String message, {bool isError = false}) {
@@ -480,7 +495,12 @@ class _SMSCodeLoginScreenState extends State<SMSCodeLoginScreen> {
                                     .colorScheme
                                     .primaryContainer,
                               ),
-                              onPressed: () => widget.onSendSMSCode(_smsCode),
+                              onPressed: () => {
+                                // Need to return to the previous screen before the sms code is sent.
+                                // To ensure that the next pop() will return to the manage settings screen.
+                                GoRouter.of(context).pop(),
+                                widget.onSendSMSCode(_smsCode)
+                              },
                               child: const Text("Verify"),
                             ),
                             const SizedBox(height: 6),
