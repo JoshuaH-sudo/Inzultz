@@ -9,7 +9,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:inzultz/firebase_options.dart';
-import 'package:inzultz/screens/auth.dart';
 import 'package:inzultz/screens/router.dart';
 import 'package:inzultz/models/db_collection.dart';
 import 'package:logging/logging.dart';
@@ -76,6 +75,7 @@ void main() async {
     return true;
   };
 
+
   MobileAds.instance.initialize();
 
   runApp(const ProviderScope(
@@ -132,15 +132,14 @@ class MainApp extends ConsumerWidget {
             );
 
             setFCMToken();
-            return const RouterScreen();
           }
 
           if (snapshot.hasError) {
             log.severe('AuthStateChanges Error: ${snapshot.error}');
-            return const AuthScreen();
+            FirebaseCrashlytics.instance.recordError(snapshot.error, snapshot.stackTrace);
           }
 
-          return const AuthScreen();
+          return const RouterScreen();
         },
       ),
     );

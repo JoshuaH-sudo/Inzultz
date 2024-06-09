@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl_phone_field/countries.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:inzultz/main.dart';
@@ -25,7 +26,6 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   var _isLoading = false;
-  var _isVerifying = false;
   var _isSignup = false;
 
   final _formKey = GlobalKey<FormState>();
@@ -35,7 +35,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
   String? _verificationCode;
   int? _resendToken;
-  String? _smsCode;
 
   @override
   void initState() {
@@ -47,6 +46,24 @@ class _AuthScreenState extends State<AuthScreen> {
         });
       }
     }
+  }
+
+  _goToVerify() async {
+    setState(() {
+      _isLoading = false;
+    });
+    return Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) {
+        return SMSCodeLoginScreen(
+          onSendSMSCode: _sendSMSCode,
+          onResendCode: _login,
+          onCancel: () async {
+            Navigator.of(context).pop();
+            await FirebaseAuth.instance.signOut();
+          },
+        );
+      }),
+    );
   }
 
   _onSubmit() async {
@@ -65,6 +82,26 @@ class _AuthScreenState extends State<AuthScreen> {
     _formKey.currentState!.save();
 
     log.info('Form saved $_enteredPhoneNumber');
+
+    try {
+      _validateData();
+    } catch (error) {
+      log.severe('Error: $error');
+      FirebaseCrashlytics.instance.recordError(
+        error,
+        StackTrace.current,
+      );
+      _showMessage(error.toString(), isError: true);
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    _login();
+  }
+
+  _validateData() async {
     final response = await FirebaseFunctions.instance
         .httpsCallable('checkPhoneNumberIsUsed')
         .call({'phoneNumber': _enteredPhoneNumber});
@@ -75,42 +112,27 @@ class _AuthScreenState extends State<AuthScreen> {
         response.data['error'],
         StackTrace.current,
       );
-      _showMessage(
-        'Unexpected error occurred, please try again.',
-        isError: true,
-      );
-      setState(() {
-        _isLoading = false;
-      });
-      return;
+      throw 'Unexpected error occurred, please try again.';
     }
 
     final isUsed = response.data['isUsed'];
-    log.info('isSignup: $_isSignup, isUsed: $isUsed');
-
     // If the user is trying to sign up and the phone number is used, proceed to login.
     if (_isSignup && isUsed) {
-      log.info('Phone number is used');
-      _showMessage('Phone number is already in use, please login.',
-          isError: true);
       setState(() {
         _isSignup = false;
         _isLoading = false;
       });
-      return;
+      throw 'Phone number is already in use, please login.';
     }
 
     // If the user is trying to login and the phone number is not used, prompt to sign up.
     if (!_isSignup && !isUsed) {
-      _showMessage('You do not have an account, sign up first.', isError: true);
       setState(() {
         _isSignup = true;
         _isLoading = false;
       });
-      return;
+      throw 'You do not have an account, sign up first.';
     }
-
-    _login();
   }
 
   _login() async {
@@ -127,14 +149,18 @@ class _AuthScreenState extends State<AuthScreen> {
             parameters: {
               'phone': _enteredPhoneNumber,
               'name': _enteredName,
+              'auto': true
             },
           );
+
+          await _createUser();
         } else {
           await analytics.logLogin(
             loginMethod: 'phone',
             parameters: {
               'phone': _enteredPhoneNumber,
               'name': _enteredName,
+              'auto': true
             },
           );
         }
@@ -142,23 +168,26 @@ class _AuthScreenState extends State<AuthScreen> {
         final userCredentials =
             await FirebaseAuth.instance.signInWithCredential(credential);
 
+        Posthog().identify(userId: userCredentials.user!.uid, userProperties: {
+          'phone': userCredentials.user!.phoneNumber!,
+          'name': userCredentials.user!.displayName ?? 'unknown',
+        });
+
         _returnToPreviousScreen(userCredentials);
       },
       verificationFailed: (FirebaseAuthException e) {
-        log.info('Failed to verify phone number: ${e.message}');
+        log.severe('Failed to verify phone number: ${e.message}');
         FirebaseCrashlytics.instance.recordError(
           e,
           StackTrace.current,
         );
         setState(() {
-          _isVerifying = false;
           _isLoading = false;
         });
       },
       codeSent: (String verificationId, int? resendToken) {
         log.info('Code sent');
         setState(() {
-          _isVerifying = true;
           _isLoading = false;
           _verificationCode = verificationId;
           _resendToken = resendToken;
@@ -167,15 +196,16 @@ class _AuthScreenState extends State<AuthScreen> {
       },
       codeAutoRetrievalTimeout: (String verificationId) {
         setState(() {
-          _isVerifying = true;
           _isLoading = false;
           _verificationCode = verificationId;
         });
       },
     );
+
+    _goToVerify();
   }
 
-  _sendSMSCode() async {
+  _sendSMSCode(String smsCode) async {
     setState(() {
       _isLoading = true;
     });
@@ -187,22 +217,24 @@ class _AuthScreenState extends State<AuthScreen> {
 
     final credential = PhoneAuthProvider.credential(
       verificationId: _verificationCode!,
-      smsCode: _smsCode!,
+      smsCode: smsCode,
     );
 
-    var userCreds;
+    UserCredential userCredentials;
     try {
-      userCreds = await FirebaseAuth.instance.signInWithCredential(credential);
-
-      Posthog().identify(userId: userCreds.user!.uid, userProperties: {
-        'phone': userCreds.user!.phoneNumber!,
-        'name': userCreds.user!.displayName!,
-      });
+      userCredentials =
+          await FirebaseAuth.instance.signInWithCredential(credential);
     } catch (error) {
       log.severe('Failed to sign in with credential: $error');
       _showMessage('Failed to sign in with credential', isError: true);
       return;
     }
+
+    log.info('User signed in: ${userCredentials.user}');
+    Posthog().identify(userId: userCredentials.user!.uid, userProperties: {
+      'phone': userCredentials.user!.phoneNumber!,
+      'name': userCredentials.user!.displayName ?? 'unknown',
+    });
 
     if (_isSignup) {
       try {
@@ -219,11 +251,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
     _formKey.currentState!.reset();
     setState(() {
-      _isVerifying = false;
       _isLoading = false;
     });
 
-    _returnToPreviousScreen(userCreds);
+    _returnToPreviousScreen(userCredentials);
   }
 
   _createUser() async {
@@ -245,13 +276,23 @@ class _AuthScreenState extends State<AuthScreen> {
       'phoneNumber': _enteredPhoneNumber,
       'FCMToken': token,
     });
+
+    await FirebaseAuth.instance.currentUser!.updateDisplayName(_enteredName);
   }
 
   _returnToPreviousScreen(credential) {
-    if (widget.mode == null) return;
+    if (widget.mode == null) return GoRouter.of(context).replace('/');
 
     log.info('Returning to previous screen');
-    Navigator.of(context).pop(credential);
+    try {
+      GoRouter.of(context).pop(credential);
+    } catch (error) {
+      log.severe('Failed to return to previous screen: $error');
+      FirebaseCrashlytics.instance.recordError(
+        error,
+        StackTrace.current,
+      );
+    }
   }
 
   _showMessage(String message, {bool isError = false}) {
@@ -356,52 +397,6 @@ class _AuthScreenState extends State<AuthScreen> {
             ))
     ];
 
-    var verifyingContent = [
-      TextFormField(
-        keyboardType: TextInputType.number,
-        decoration: const InputDecoration(
-          labelText: 'Verification Code',
-          border: OutlineInputBorder(
-            borderSide: BorderSide(),
-          ),
-        ),
-        validator: (value) {
-          if (value == null || value.trim().isEmpty) {
-            return 'Please enter a verification code';
-          }
-          return null;
-        },
-        initialValue: '',
-        onSaved: (value) {
-          setState(() {
-            _smsCode = value!;
-          });
-        },
-      ),
-      const SizedBox(height: 12),
-      ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        ),
-        onPressed: _sendSMSCode,
-        child: const Text("Verify"),
-      ),
-      const SizedBox(height: 6),
-      TextButton(
-        onPressed: _login,
-        child: const Text("Resend code"),
-      ),
-      const SizedBox(height: 6),
-      TextButton(
-        onPressed: () {
-          setState(() {
-            _isVerifying = false;
-          });
-        },
-        child: const Text("Cancel"),
-      ),
-    ];
-
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.primary,
       body: Center(
@@ -419,12 +414,108 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (_isVerifying)
-                            ...verifyingContent
-                          else
-                            ...loginContent,
+                          ...loginContent,
                         ],
                       ),
+                    ),
+                  ),
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SMSCodeLoginScreen extends StatefulWidget {
+  final Function(String) onSendSMSCode;
+  final VoidCallback onResendCode;
+  final VoidCallback onCancel;
+
+  const SMSCodeLoginScreen({
+    super.key,
+    required this.onSendSMSCode,
+    required this.onResendCode,
+    required this.onCancel,
+  });
+
+  @override
+  State<SMSCodeLoginScreen> createState() => _SMSCodeLoginScreenState();
+}
+
+class _SMSCodeLoginScreenState extends State<SMSCodeLoginScreen> {
+  String _smsCode = '';
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      body: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Card(
+                margin: const EdgeInsets.all(20),
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Column(
+                          children: [
+                            TextFormField(
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Verification Code',
+                                border: OutlineInputBorder(
+                                  borderSide: BorderSide(),
+                                ),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Please enter a verification code';
+                                }
+                                return null;
+                              },
+                              initialValue: '',
+                              onChanged: (value) {
+                                setState(() {
+                                  _smsCode = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
+                              ),
+                              onPressed: () => {
+                                // Need to return to the previous screen before the sms code is sent.
+                                // To ensure that the next pop() will return to the manage settings screen.
+                                GoRouter.of(context).pop(),
+                                widget.onSendSMSCode(_smsCode)
+                              },
+                              child: const Text("Verify"),
+                            ),
+                            const SizedBox(height: 6),
+                            TextButton(
+                              onPressed: widget.onResendCode,
+                              child: const Text("Resend code"),
+                            ),
+                            const SizedBox(height: 6),
+                            TextButton(
+                              onPressed: widget.onCancel,
+                              child: const Text("Cancel"),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),

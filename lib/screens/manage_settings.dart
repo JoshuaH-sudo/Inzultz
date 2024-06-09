@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:inzultz/components/consent_manager.dart';
 import 'package:inzultz/providers/ads.dart';
@@ -96,24 +97,25 @@ class _ManageSettingsState extends ConsumerState<ManageSettings> {
       }
     }
 
-    login() async {
-      final newCredential = await Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) {
-          return const AuthScreen(
-            mode: AuthMode.LOGIN,
-          );
-        }),
+    Future<Object?> login() async {
+      log.info('Prompting user to login');
+      final credential = await GoRouter.of(context).push<UserCredential>(
+        '/auth',
+        extra: {'mode': AuthMode.LOGIN},
       );
 
-      return newCredential;
+      log.info('User logged in $credential');
+      return credential;
     }
 
     void onDeleteUser() async {
       try {
         final newCred = await login();
         if (newCred == null) {
+          log.warning('User cancelled delete account');
           return;
         }
+        log.info('User logged in, deleting account');
 
         ref.read(appProvider.notifier).setLoading(true);
         await deleteDBUser();

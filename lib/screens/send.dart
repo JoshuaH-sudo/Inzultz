@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:inzultz/components/bottom_ad.dart';
 import 'package:inzultz/main.dart';
 import 'package:inzultz/models/contact.dart';
@@ -62,10 +63,8 @@ class _SendScreenState extends ConsumerState<SendScreen> {
       }));
     }
 
-    void settings() async {
-      Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-        return const ManageSettings();
-      }));
+    void manageSettings() async {
+      GoRouter.of(context).push('/settings');
     }
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -124,11 +123,7 @@ class _SendScreenState extends ConsumerState<SendScreen> {
             onPressed: manageContacts,
           ),
           IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              settings();
-            },
-          ),
+              icon: const Icon(Icons.settings), onPressed: manageSettings),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
