@@ -22,8 +22,14 @@ class BannerExampleState extends ConsumerState<BottomAd> {
   Orientation? _currentOrientation;
 
   @override
-  Widget build(BuildContext context) {
+  void initState() {
+    super.initState();
+    _loadAd();
     ref.watch(googleAdsProvider.notifier).setupMobileAdsSDK();
+  }
+
+  @override
+  Widget build(BuildContext context) {
 
     return OrientationBuilder(builder: (context, orientation) {
       if (_currentOrientation != orientation) {

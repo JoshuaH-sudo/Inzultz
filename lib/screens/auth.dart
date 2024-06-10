@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl_phone_field/countries.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:inzultz/main.dart';
+import 'package:inzultz/screens/sms_login_screen.dart';
 import 'package:logging/logging.dart';
 import 'package:posthog_flutter/posthog_flutter.dart';
 
@@ -48,15 +49,16 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  _goToVerify() async {
+  _goToVerify() {
     setState(() {
       _isLoading = false;
     });
+
     return Navigator.of(context).push(
       MaterialPageRoute(builder: (context) {
         return SMSCodeLoginScreen(
           onSendSMSCode: _sendSMSCode,
-          onResendCode: _login,
+          onResendCode: _startAuthProcess,
           onCancel: () async {
             Navigator.of(context).pop();
             await FirebaseAuth.instance.signOut();
@@ -84,7 +86,7 @@ class _AuthScreenState extends State<AuthScreen> {
     log.info('Form saved $_enteredPhoneNumber');
 
     try {
-      _validateData();
+      await _validateData();
     } catch (error) {
       log.severe('Error: $error');
       FirebaseCrashlytics.instance.recordError(
@@ -98,7 +100,7 @@ class _AuthScreenState extends State<AuthScreen> {
       return;
     }
 
-    _login();
+    await _startAuthProcess();
   }
 
   _validateData() async {
@@ -135,7 +137,7 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  _login() async {
+  _startAuthProcess() async {
     await FirebaseAuth.instance.verifyPhoneNumber(
       forceResendingToken: _resendToken,
       phoneNumber: _enteredPhoneNumber,
@@ -220,6 +222,9 @@ class _AuthScreenState extends State<AuthScreen> {
       smsCode: smsCode,
     );
 
+    print('CREDENTIAL: $credential');
+    print('entered phone number: $_enteredPhoneNumber');
+
     UserCredential userCredentials;
     try {
       userCredentials =
@@ -227,6 +232,10 @@ class _AuthScreenState extends State<AuthScreen> {
     } catch (error) {
       log.severe('Failed to sign in with credential: $error');
       _showMessage('Failed to sign in with credential', isError: true);
+
+      setState(() {
+        _isLoading = false;
+      });
       return;
     }
 
@@ -246,6 +255,10 @@ class _AuthScreenState extends State<AuthScreen> {
           isError: true,
         );
         await FirebaseAuth.instance.signOut();
+
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
 
@@ -254,6 +267,9 @@ class _AuthScreenState extends State<AuthScreen> {
       _isLoading = false;
     });
 
+    // Need to return to the previous screen before the sms code is sent.
+    // To ensure that the next pop() will return to the manage settings screen.
+    if (mounted) GoRouter.of(context).pop();
     _returnToPreviousScreen(userCredentials);
   }
 
@@ -361,6 +377,11 @@ class _AuthScreenState extends State<AuthScreen> {
           }
           return null;
         },
+        onChanged: (value) {
+          setState(() {
+            _enteredPhoneNumber = value.completeNumber;
+          });
+        },
         onSaved: (phone) {
           setState(() {
             _enteredPhoneNumber =
@@ -417,105 +438,6 @@ class _AuthScreenState extends State<AuthScreen> {
                           ...loginContent,
                         ],
                       ),
-                    ),
-                  ),
-                ),
-              )
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class SMSCodeLoginScreen extends StatefulWidget {
-  final Function(String) onSendSMSCode;
-  final VoidCallback onResendCode;
-  final VoidCallback onCancel;
-
-  const SMSCodeLoginScreen({
-    super.key,
-    required this.onSendSMSCode,
-    required this.onResendCode,
-    required this.onCancel,
-  });
-
-  @override
-  State<SMSCodeLoginScreen> createState() => _SMSCodeLoginScreenState();
-}
-
-class _SMSCodeLoginScreenState extends State<SMSCodeLoginScreen> {
-  String _smsCode = '';
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Card(
-                margin: const EdgeInsets.all(20),
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Column(
-                          children: [
-                            TextFormField(
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Verification Code',
-                                border: OutlineInputBorder(
-                                  borderSide: BorderSide(),
-                                ),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter a verification code';
-                                }
-                                return null;
-                              },
-                              initialValue: '',
-                              onChanged: (value) {
-                                setState(() {
-                                  _smsCode = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer,
-                              ),
-                              onPressed: () => {
-                                // Need to return to the previous screen before the sms code is sent.
-                                // To ensure that the next pop() will return to the manage settings screen.
-                                GoRouter.of(context).pop(),
-                                widget.onSendSMSCode(_smsCode)
-                              },
-                              child: const Text("Verify"),
-                            ),
-                            const SizedBox(height: 6),
-                            TextButton(
-                              onPressed: widget.onResendCode,
-                              child: const Text("Resend code"),
-                            ),
-                            const SizedBox(height: 6),
-                            TextButton(
-                              onPressed: widget.onCancel,
-                              child: const Text("Cancel"),
-                            ),
-                          ],
-                        ),
-                      ],
                     ),
                   ),
                 ),
