@@ -108,6 +108,11 @@ class _ManageSettingsState extends ConsumerState<ManageSettings> {
       return credential;
     }
 
+    returnToLogin() {
+      log.info('Returning to login');
+      GoRouter.of(context).go('/auth');
+    }
+
     void onDeleteUser() async {
       try {
         final newCred = await login();
@@ -123,6 +128,7 @@ class _ManageSettingsState extends ConsumerState<ManageSettings> {
 
         log.shout('Deleting user');
         await FirebaseAuth.instance.currentUser!.delete();
+        returnToLogin();
       } catch (error) {
         if (error is FirebaseAuthException) {
           log.severe('Failed to delete user: ${error.message}');
