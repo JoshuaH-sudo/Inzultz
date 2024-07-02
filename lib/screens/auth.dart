@@ -54,6 +54,14 @@ class _AuthScreenState extends State<AuthScreen> {
       _isLoading = false;
     });
 
+    final isValid = _formKey.currentState!.validate();
+    if (!isValid) {
+      _showMessage('Invalid data entered', isError: true);
+      log.severe('Invalid form ${_formKey.currentState.toString()}');
+      return;
+    }
+    _formKey.currentState!.save();
+
     return Navigator.of(context).push(
       MaterialPageRoute(builder: (context) {
         return SMSCodeLoginScreen(
@@ -93,7 +101,13 @@ class _AuthScreenState extends State<AuthScreen> {
         error,
         StackTrace.current,
       );
-      _showMessage(error.toString(), isError: true);
+      if (error
+          .toString()
+          .contains("[firebase_functions/unavailable] UNAVAILABLE")) {
+        _showMessage("Applications servers maybe down. Please try again later");
+      } else {
+        _showMessage(error.toString(), isError: true);
+      }
       setState(() {
         _isLoading = false;
       });
@@ -208,15 +222,12 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   _sendSMSCode(String smsCode) async {
+    log.info('Sending SMS code');
     setState(() {
       _isLoading = true;
     });
-    final isValid = _formKey.currentState!.validate();
-    if (!isValid) {
-      return;
-    }
-    _formKey.currentState!.save();
 
+    log.info('Getting credential');
     final credential = PhoneAuthProvider.credential(
       verificationId: _verificationCode!,
       smsCode: smsCode,
@@ -255,10 +266,6 @@ class _AuthScreenState extends State<AuthScreen> {
           isError: true,
         );
         await FirebaseAuth.instance.signOut();
-
-        setState(() {
-          _isLoading = false;
-        });
       }
     }
 
@@ -339,12 +346,19 @@ class _AuthScreenState extends State<AuthScreen> {
           ),
         ),
         validator: (value) {
+          // Check if this screen is on top of the stack
           if (value == null || value.trim().isEmpty) {
+            log.severe('Name is empty');
             return 'Please enter a name';
           }
           return null;
         },
         initialValue: '',
+        onChanged: (value) => {
+          setState(() {
+            _enteredName = value;
+          })
+        },
         onSaved: (value) {
           setState(() {
             _enteredName = value!;
@@ -373,6 +387,7 @@ class _AuthScreenState extends State<AuthScreen> {
         languageCode: "en",
         validator: (phone) {
           if (phone == null || phone.completeNumber.isEmpty) {
+            log.severe('Phone number is empty');
             return 'Please enter a phone number';
           }
           return null;
