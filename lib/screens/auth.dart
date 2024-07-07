@@ -192,7 +192,7 @@ class _AuthScreenState extends State<AuthScreen> {
         _returnToPreviousScreen(userCredentials);
       },
       verificationFailed: (FirebaseAuthException e) {
-        log.severe('Failed to verify phone number: ${e.message}');
+        log.severe('Failed to verify phone number: $_enteredPhoneNumber, error: ${e.message}');
         FirebaseCrashlytics.instance.recordError(
           e,
           StackTrace.current,

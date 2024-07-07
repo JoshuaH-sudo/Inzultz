@@ -26,10 +26,21 @@ final _router = GoRouter(
       builder: (context, state) => const ManageSettings(),
     )
   ],
-  redirect: (context, state) async {
-    if (FirebaseAuth.instance.currentUser == null) {
-      return '/auth';
+  redirect: (context, state) {
+    final bool loggedIn = FirebaseAuth.instance.currentUser != null; 
+    final bool loggingIn = state.matchedLocation == '/auth';
+
+    if (!loggedIn) {
+        return '/auth';
+      }
+
+    // if the user is logged in but still on the login page, send them to
+    // the home page
+    if (loggingIn) {
+      return '/';
     }
+    
+    return null;
   },
 );
 
