@@ -14,6 +14,7 @@ export default function AppLayout() {
 
   // Handle user state changes
   function onAuthStateChanged(user: any) {
+    console.log("User state changed: ", user);
     setUser(user);
     if (initializing) setInitializing(false);
   }
@@ -23,9 +24,10 @@ export default function AppLayout() {
     return subscriber; // unsubscribe on unmount
   }, []);
 
-  if (initializing) return null;
+  // if (initializing) return null;
 
   if (!user) {
+    console.log("User not logged in");
     return <Redirect href="/login" />;
   }
   return (

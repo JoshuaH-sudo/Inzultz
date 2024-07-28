@@ -5,7 +5,7 @@ import {
 } from "@react-navigation/native";
 import messaging from "@react-native-firebase/messaging";
 import { useFonts } from "expo-font";
-import { Slot } from "expo-router";
+import { Slot, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
@@ -30,10 +30,9 @@ export default function RootLayout() {
           PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
         );
         if (authStatus !== PermissionsAndroid.RESULTS.GRANTED) {
-          console.log("Notification permission denied");
           return;
         }
-        console.log("Android notification permission");
+        console.log("Android notification permission", authStatus);
       }
 
       if (Platform.OS === "ios") {
@@ -67,7 +66,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Slot/>
+      <Slot />
     </ThemeProvider>
   );
 }
