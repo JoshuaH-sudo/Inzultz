@@ -1,3 +1,4 @@
+/* eslint-disable valid-jsdoc */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable object-curly-spacing */
 /**
@@ -27,6 +28,14 @@ admin.initializeApp();
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
+
+/**
+ * An HTTP function that returns "Hello from Firebase!".
+ */
+export const helloWorld = onRequest(async (request: any, response: any) => {
+  logger.info("Hello World", { structuredData: true, request });
+  response.json({ data: { message: "Hello from Firebase!" } });
+});
 
 export const sendNotification = onRequest(async (request, response) => {
   logger.info("Send Notification", { structuredData: true, request });
