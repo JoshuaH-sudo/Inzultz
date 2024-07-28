@@ -15,7 +15,10 @@
     "ios": {
       "supportsTablet": true,
       "googleServicesFile": "./google/GoogleService-Info.plist",
-      "bundleIdentifier": "joshua.hoban.inzultz"
+      "bundleIdentifier": "joshua.hoban.inzultz",
+      "entitlements": {
+        "aps-environment": "production"
+      }
     },
     "android": {
       "googleServicesFile": "./google/google-services.json",
