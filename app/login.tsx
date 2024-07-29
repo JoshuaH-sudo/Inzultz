@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Button, TextInput, View } from "react-native";
-import auth from "@react-native-firebase/auth";
+import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import { router } from "expo-router";
 
 export default function PhoneSignIn() {
   // If null, no SMS has been sent
-  const [confirm, setConfirm] = useState<any>(null);
+  const [confirm, setConfirm] =
+    useState<FirebaseAuthTypes.ConfirmationResult>();
 
   // verification code (OTP - One-Time-Passcode)
   const [code, setCode] = useState("123456");
@@ -26,15 +28,14 @@ export default function PhoneSignIn() {
 
   // Handle the button press
   async function signInWithPhoneNumber(phoneNumber: string) {
-    console.log("signInWithPhoneNumber", phoneNumber);
     const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
     setConfirm(confirmation);
   }
 
   async function confirmCode() {
-    console.log("confirmCode", code);
     try {
-      await confirm.confirm(code);
+      const userCreds = await confirm?.confirm(code);
+      router.replace("/");
     } catch (error) {
       console.log("Invalid code.");
     }
@@ -53,6 +54,7 @@ export default function PhoneSignIn() {
     <View
       style={{
         flex: 1,
+        height: "100%",
         paddingTop: 50,
         alignItems: "center",
         justifyContent: "center",

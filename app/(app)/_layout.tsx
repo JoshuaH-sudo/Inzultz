@@ -24,10 +24,9 @@ export default function AppLayout() {
     return subscriber; // unsubscribe on unmount
   }, []);
 
-  // if (initializing) return null;
+  if (initializing) return null;
 
   if (!user) {
-    console.log("User not logged in");
     return <Redirect href="/login" />;
   }
   return (
