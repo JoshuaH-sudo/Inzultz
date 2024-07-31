@@ -1,3 +1,5 @@
+import { selectUser, setUser } from "@/features/auth/authSlice";
+import { useAppDispatch, useAppSelector } from "@/features/hooks";
 import auth from "@react-native-firebase/auth";
 import { Redirect, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -8,14 +10,17 @@ import "react-native-reanimated";
 SplashScreen.preventAutoHideAsync();
 
 export default function AppLayout() {
+  const dispatch = useAppDispatch();
+  const user = useAppSelector(selectUser);
   // Set an initializing state whilst Firebase connects
   const [initializing, setInitializing] = useState(true);
-  const [user, setUser] = useState();
 
   // Handle user state changes
   function onAuthStateChanged(user: any) {
     console.log("User state changed: ", user);
-    setUser(user);
+
+    dispatch(setUser(JSON.stringify(user)));
+
     if (initializing) setInitializing(false);
   }
 

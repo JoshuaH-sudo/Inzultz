@@ -2,8 +2,13 @@ import React, { useState, useEffect } from "react";
 import { Button, TextInput, View } from "react-native";
 import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { router } from "expo-router";
+import { selectUser, setUser } from "@/features/auth/authSlice";
+import { useAppDispatch, useAppSelector } from "@/features/hooks";
 
 export default function PhoneSignIn() {
+  const dispatch = useAppDispatch();
+  const user = useAppSelector(selectUser);
+  
   // If null, no SMS has been sent
   const [confirm, setConfirm] =
     useState<FirebaseAuthTypes.ConfirmationResult>();
@@ -18,6 +23,7 @@ export default function PhoneSignIn() {
       // Actually, if he/she tries to enter it, he/she will get an error message because the code was already used in the background.
       // In this function, make sure you hide the component(s) for entering the code and/or navigate away from this screen.
       // It is also recommended to display a message to the user informing him/her that he/she has successfully logged in.
+      dispatch(setUser(user));
     }
   }
 
@@ -35,7 +41,7 @@ export default function PhoneSignIn() {
   async function confirmCode() {
     try {
       await confirm?.confirm(code);
-      
+
       router.replace("/");
     } catch (error) {
       console.log("Invalid code.");

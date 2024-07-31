@@ -1,27 +1,40 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { FirebaseAuthTypes } from "@react-native-firebase/auth";
 
 interface AuthState {
-  user: FirebaseAuthTypes.User | null;
-  status: 'idle' | 'loading' | 'failed';
+  user: {
+    uid: string;
+    email: string | null;
+    displayName: string | null;
+    photoURL: string | null;
+    phoneNumber: string | null;
+  } | null;
+  status: "idle" | "loading" | "failed";
 }
 
 const initialState: AuthState = {
   user: null,
-  status: 'idle',
+  status: "idle",
 };
 
 export const authSlice = createSlice({
-  name: 'auth',
+  name: "auth",
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<FirebaseAuthTypes.User>) => {
-      state.user = action.payload;
-    }
+    setUser: (state, action: PayloadAction<string>) => {
+      const payload = JSON.parse(action.payload);
+      state.user = {
+        uid: payload.uid,
+        email: payload.email,
+        displayName: payload.displayName,
+        photoURL: payload.photoURL,
+        phoneNumber: payload.phoneNumber,
+      };
+    },
   },
   selectors: {
-    selectUser: (state: AuthState) => state.user
-  }
+    selectUser: (state: AuthState) => state.user,
+  },
 });
 
 export const { setUser } = authSlice.actions;
