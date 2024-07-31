@@ -34,7 +34,8 @@ export default function PhoneSignIn() {
 
   async function confirmCode() {
     try {
-      const userCreds = await confirm?.confirm(code);
+      await confirm?.confirm(code);
+      
       router.replace("/");
     } catch (error) {
       console.log("Invalid code.");
@@ -43,10 +44,18 @@ export default function PhoneSignIn() {
 
   if (!confirm) {
     return (
-      <Button
-        title="Phone Number Sign In"
-        onPress={() => signInWithPhoneNumber("+61 111111111")}
-      />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Button
+          title="Phone Number Sign In"
+          onPress={() => signInWithPhoneNumber("+61 111111111")}
+        />
+      </View>
     );
   }
 
@@ -54,11 +63,8 @@ export default function PhoneSignIn() {
     <View
       style={{
         flex: 1,
-        height: "100%",
-        paddingTop: 50,
-        alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "black",
+        alignItems: "center",
       }}
     >
       <TextInput value={code} onChangeText={(text) => setCode(text)} />
