@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from "@/features/hooks";
 export default function PhoneSignIn() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
-  
+
   // If null, no SMS has been sent
   const [confirm, setConfirm] =
     useState<FirebaseAuthTypes.ConfirmationResult>();
@@ -17,13 +17,15 @@ export default function PhoneSignIn() {
   const [code, setCode] = useState("123456");
 
   // Handle login
-  function onAuthStateChanged(user: any) {
+  function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {  
     if (user) {
       // Some Android devices can automatically process the verification code (OTP) message, and the user would NOT need to enter the code.
       // Actually, if he/she tries to enter it, he/she will get an error message because the code was already used in the background.
       // In this function, make sure you hide the component(s) for entering the code and/or navigate away from this screen.
       // It is also recommended to display a message to the user informing him/her that he/she has successfully logged in.
-      dispatch(setUser(user));
+      dispatch(setUser(JSON.stringify(user)));
+
+      router.replace("/");
     }
   }
 

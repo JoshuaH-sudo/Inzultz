@@ -1,9 +1,12 @@
 import { selectUser, setUser } from "@/features/auth/authSlice";
 import { useAppDispatch, useAppSelector } from "@/features/hooks";
-import auth from "@react-native-firebase/auth";
+import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
+import messaging from "@react-native-firebase/messaging";
+import firestore from "@react-native-firebase/firestore";
 import { Redirect, Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
+import { Alert } from "react-native";
 import "react-native-reanimated";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -16,10 +19,17 @@ export default function AppLayout() {
   const [initializing, setInitializing] = useState(true);
 
   // Handle user state changes
-  function onAuthStateChanged(user: any) {
+  async function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {
     console.log("User state changed: ", user);
 
-    dispatch(setUser(JSON.stringify(user)));
+    if (user) {
+      const FCMToken = await messaging().getToken();
+      const uid = auth().currentUser?.uid;
+      await firestore().doc(`users/${uid}`).update({
+        FCMToken: FCMToken,
+      });
+      dispatch(setUser(JSON.stringify(user)));
+    }
 
     if (initializing) setInitializing(false);
   }
@@ -27,6 +37,14 @@ export default function AppLayout() {
   useEffect(() => {
     const subscriber = auth().onAuthStateChanged(onAuthStateChanged);
     return subscriber; // unsubscribe on unmount
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+      Alert.alert("A new FCM message arrived!", JSON.stringify(remoteMessage));
+    });
+
+    return unsubscribe;
   }, []);
 
   if (initializing) return null;
