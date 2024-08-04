@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { Button, TextInput, View } from "react-native";
 import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { router } from "expo-router";
 import { setUser } from "@/features/auth/authSlice";
 import { useAppDispatch } from "@/features/hooks";
+import PhoneInput, { ICountry } from "react-native-international-phone-number";
+import { Button, TextInput } from "react-native-paper";
+import { View } from "react-native";
 
 export default function PhoneSignIn() {
   const dispatch = useAppDispatch();
+  const [selectedCountry, setSelectedCountry] = useState<ICountry>();
+  const [phoneNumber, setPhoneNumber] = useState<string>("");
   // If null, no SMS has been sent
   const [confirm, setConfirm] =
     useState<FirebaseAuthTypes.ConfirmationResult>();
 
   // verification code (OTP - One-Time-Passcode)
-  const [code, setCode] = useState("123456");
+  const [code, setCode] = useState<string>();
 
   // Handle login
   function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {
@@ -33,36 +37,26 @@ export default function PhoneSignIn() {
   }, []);
 
   // Handle the button press
-  async function signInWithPhoneNumber(phoneNumber: string) {
-    const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
-    setConfirm(confirmation);
+  async function signInWithPhoneNumber() {
+    console.log("signInWithPhoneNumber");
+    console.log(phoneNumber);
+    console.log(selectedCountry);
+    try {
+      const confirmation = await auth().signInWithPhoneNumber(
+        `${selectedCountry?.callingCode} ${phoneNumber}`
+      );
+      setConfirm(confirmation);
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async function confirmCode() {
     try {
-      await confirm?.confirm(code);
-
-      router.replace("/");
+      await confirm?.confirm(code!);
     } catch (error) {
       console.log("Invalid code.");
     }
-  }
-
-  if (!confirm) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <Button
-          title="Phone Number Sign In"
-          onPress={() => signInWithPhoneNumber("+61 111111111")}
-        />
-      </View>
-    );
   }
 
   return (
@@ -73,8 +67,29 @@ export default function PhoneSignIn() {
         alignItems: "center",
       }}
     >
-      <TextInput value={code} onChangeText={(text) => setCode(text)} />
-      <Button title="Confirm Code" onPress={() => confirmCode()} />
+      <View>
+        {confirm ? (
+          <>
+            <TextInput value={code} onChangeText={(text) => setCode(text)} />
+            <Button onPress={() => confirmCode()}>Send Confirm Code</Button>
+          </>
+        ) : (
+          <>
+            <PhoneInput
+              value={phoneNumber}
+              onChangePhoneNumber={(state) => setPhoneNumber(state)}
+              selectedCountry={selectedCountry}
+              onChangeSelectedCountry={(state) => setSelectedCountry(state)}
+            />
+            <Button
+              disabled={phoneNumber === ""}
+              onPress={() => signInWithPhoneNumber()}
+            >
+              Sign In
+            </Button>
+          </>
+        )}
+      </View>
     </View>
   );
 }
