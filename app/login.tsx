@@ -2,13 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Button, TextInput, View } from "react-native";
 import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { router } from "expo-router";
-import { selectUser, setUser } from "@/features/auth/authSlice";
-import { useAppDispatch, useAppSelector } from "@/features/hooks";
+import { setUser } from "@/features/auth/authSlice";
+import { useAppDispatch } from "@/features/hooks";
 
 export default function PhoneSignIn() {
   const dispatch = useAppDispatch();
-  const user = useAppSelector(selectUser);
-
   // If null, no SMS has been sent
   const [confirm, setConfirm] =
     useState<FirebaseAuthTypes.ConfirmationResult>();
@@ -17,7 +15,7 @@ export default function PhoneSignIn() {
   const [code, setCode] = useState("123456");
 
   // Handle login
-  function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {  
+  function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {
     if (user) {
       // Some Android devices can automatically process the verification code (OTP) message, and the user would NOT need to enter the code.
       // Actually, if he/she tries to enter it, he/she will get an error message because the code was already used in the background.
