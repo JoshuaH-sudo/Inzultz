@@ -70,7 +70,10 @@ export default function PhoneSignIn() {
       <View>
         {confirm ? (
           <>
-            <TextInput value={code} onChangeText={(text) => setCode(text)} />
+            <TextInput style={{
+              maxHeight: 40,
+              width: 200,
+            }} value={code} onChangeText={(text) => setCode(text)} />
             <Button onPress={() => confirmCode()}>Send Confirm Code</Button>
           </>
         ) : (

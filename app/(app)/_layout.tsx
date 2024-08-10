@@ -1,5 +1,5 @@
-import { selectUser, setUser } from "@/features/auth/authSlice";
-import { useAppDispatch, useAppSelector } from "@/features/hooks";
+import { setUser } from "@/features/auth/authSlice";
+import { useAppDispatch } from "@/features/hooks";
 import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import messaging from "@react-native-firebase/messaging";
 import firestore from "@react-native-firebase/firestore";
@@ -14,7 +14,6 @@ SplashScreen.preventAutoHideAsync();
 
 export default function AppLayout() {
   const dispatch = useAppDispatch();
-  const user = useAppSelector(selectUser);
   // Set an initializing state whilst Firebase connects
   const [initializing, setInitializing] = useState(true);
 
@@ -25,6 +24,7 @@ export default function AppLayout() {
     if (user) {
       const FCMToken = await messaging().getToken();
       const uid = auth().currentUser?.uid;
+      console.log("FCMToken:", FCMToken);
       await firestore().doc(`users/${uid}`).update({
         FCMToken: FCMToken,
       });
@@ -49,7 +49,7 @@ export default function AppLayout() {
 
   if (initializing) return null;
 
-  if (!user) {
+  if (!auth().currentUser) {
     return <Redirect href="/login" />;
   }
   return (
