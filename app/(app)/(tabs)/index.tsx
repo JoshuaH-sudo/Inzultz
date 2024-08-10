@@ -56,7 +56,6 @@ export default function HomeScreen() {
         alignContent: "center",
       }}
     >
-      <Text>Main Page</Text>
       <Dropdown
         style={styles.dropdown}
         placeholderStyle={styles.placeholderStyle}
