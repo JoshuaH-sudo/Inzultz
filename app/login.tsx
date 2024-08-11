@@ -11,12 +11,6 @@ export default function PhoneSignIn() {
   const dispatch = useAppDispatch();
   const [selectedCountry, setSelectedCountry] = useState<ICountry>();
   const [phoneNumber, setPhoneNumber] = useState<string>("");
-  // If null, no SMS has been sent
-  const [confirm, setConfirm] =
-    useState<FirebaseAuthTypes.ConfirmationResult>();
-
-  // verification code (OTP - One-Time-Passcode)
-  const [code, setCode] = useState<string>();
 
   // Handle login
   function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {
@@ -42,20 +36,14 @@ export default function PhoneSignIn() {
     console.log(phoneNumber);
     console.log(selectedCountry);
     try {
-      const confirmation = await auth().signInWithPhoneNumber(
-        `${selectedCountry?.callingCode} ${phoneNumber}`
-      );
-      setConfirm(confirmation);
+      router.push({
+        pathname: "/confirm",
+        params: {
+          phoneNumber: `${selectedCountry?.callingCode} ${phoneNumber}`,
+        },
+      });
     } catch (error) {
       console.log(error);
-    }
-  }
-
-  async function confirmCode() {
-    try {
-      await confirm?.confirm(code!);
-    } catch (error) {
-      console.log("Invalid code.");
     }
   }
 
@@ -68,30 +56,19 @@ export default function PhoneSignIn() {
       }}
     >
       <View>
-        {confirm ? (
-          <>
-            <TextInput style={{
-              maxHeight: 40,
-              width: 200,
-            }} value={code} onChangeText={(text) => setCode(text)} />
-            <Button onPress={() => confirmCode()}>Send Confirm Code</Button>
-          </>
-        ) : (
-          <>
-            <PhoneInput
-              value={phoneNumber}
-              onChangePhoneNumber={(state) => setPhoneNumber(state)}
-              selectedCountry={selectedCountry}
-              onChangeSelectedCountry={(state) => setSelectedCountry(state)}
-            />
-            <Button
-              disabled={phoneNumber === ""}
-              onPress={() => signInWithPhoneNumber()}
-            >
-              Sign In
-            </Button>
-          </>
-        )}
+        <PhoneInput
+          value={phoneNumber}
+          onChangePhoneNumber={(state) => setPhoneNumber(state)}
+          selectedCountry={selectedCountry}
+          onChangeSelectedCountry={(state) => setSelectedCountry(state)}
+        />
+        <Button
+          disabled={phoneNumber === ""}
+          onPress={() => signInWithPhoneNumber()}
+        >
+          Sign In
+        </Button>
+        <Button onPress={() => router.push("/signup")}>Create Account</Button>
       </View>
     </View>
   );
