@@ -19,7 +19,9 @@ type NewUserForm = {
 };
 export default function PhoneSignIn() {
   const dispatch = useAppDispatch();
-  const { savedFormValues } = useLocalSearchParams<{ savedFormValues: string }>();
+  const { savedFormValues } = useLocalSearchParams<{
+    savedFormValues: string;
+  }>();
   const formik = useFormik<NewUserForm>({
     initialValues: {
       name: "",
@@ -39,26 +41,12 @@ export default function PhoneSignIn() {
     },
   });
 
-  async function updateUserProfile(savedFormValues: string) {
-    const values = JSON.parse(savedFormValues);
-    console.log(values);
-
-    console.log("Updating user profile");
-    await auth().currentUser?.updateProfile({
-      displayName: values.name,
-    });
-
-    router.replace("/");
-  }
-  
-  useEffect(() => {
-    if (savedFormValues) {
-      updateUserProfile(savedFormValues);
-    }
-  }, [savedFormValues]);
-
-  async function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {
+  async function onAuthStateChanged(
+    user: FirebaseAuthTypes.User | null,
+    savedFormValues: string
+  ) {
     if (user) {
+      const values = JSON.parse(savedFormValues);
       await firestore().collection("users").doc(user.uid).set({
         name: values.name,
         // This version of the phone number will be correctly parse with leading zeros removed.
@@ -69,14 +57,17 @@ export default function PhoneSignIn() {
         displayName: formik.values.name,
       });
       dispatch(setUser(JSON.stringify(user)));
-
     }
   }
 
   useEffect(() => {
-    const subscriber = auth().onAuthStateChanged(onAuthStateChanged);
+    if (!savedFormValues) return;
+
+    const subscriber = auth().onAuthStateChanged((user) =>
+      onAuthStateChanged(user, savedFormValues)
+    );
     return subscriber; // unsubscribe on unmount
-  }, []);
+  }, [savedFormValues]);
 
   const { values, handleChange, setFieldValue, handleSubmit } = formik;
 
