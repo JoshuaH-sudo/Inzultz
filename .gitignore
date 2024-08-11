@@ -22,4 +22,4 @@ expo-env.d.ts
 google/google-services.json
 google/GoogleService-Info.plist
 
-# android/
+android/
