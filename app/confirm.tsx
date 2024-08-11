@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from "react";
 import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { router, useLocalSearchParams } from "expo-router";
-import { setUser } from "@/features/auth/authSlice";
-import { useAppDispatch } from "@/features/hooks";
-import PhoneInput, { ICountry } from "react-native-international-phone-number";
 import { Button, TextInput } from "react-native-paper";
 import { View } from "react-native";
 
 export default function PhoneSignIn() {
-  const { phoneNumber } = useLocalSearchParams<{ phoneNumber: string }>();
+  const { phoneNumber, savedFormValues } = useLocalSearchParams<{ phoneNumber: string, savedFormValues: string }>();
   // If null, no SMS has been sent
   const [confirm, setConfirm] =
     useState<FirebaseAuthTypes.ConfirmationResult>();
@@ -17,12 +14,10 @@ export default function PhoneSignIn() {
 
   useEffect(() => {
     if (phoneNumber) signInWithPhoneNumber(phoneNumber);
-  },[phoneNumber]);
+  }, [phoneNumber]);
 
   // Handle the button press
   async function signInWithPhoneNumber(phoneNumber: string) {
-    console.log("signInWithPhoneNumber");
-    console.log(phoneNumber);
     try {
       const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
       setConfirm(confirmation);
@@ -34,12 +29,11 @@ export default function PhoneSignIn() {
   async function confirmCode() {
     try {
       const credentials = await confirm?.confirm(code!);
-      router.replace({
-        pathname: "/",
-        params: {
-          user: JSON.stringify(credentials?.user),
-        },
-      })
+      router.back();
+      router.setParams({
+        user: JSON.stringify(credentials?.user),
+        savedFormValues,
+      });
     } catch (error) {
       console.log("Invalid code.");
     }

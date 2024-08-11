@@ -32,9 +32,6 @@ export default function PhoneSignIn() {
 
   // Handle the button press
   async function signInWithPhoneNumber() {
-    console.log("signInWithPhoneNumber");
-    console.log(phoneNumber);
-    console.log(selectedCountry);
     try {
       router.push({
         pathname: "/confirm",

@@ -24,7 +24,6 @@ export default function AppLayout() {
     if (user) {
       const FCMToken = await messaging().getToken();
       const uid = auth().currentUser?.uid;
-      console.log("FCMToken:", FCMToken);
       await firestore().doc(`users/${uid}`).update({
         FCMToken: FCMToken,
       });
