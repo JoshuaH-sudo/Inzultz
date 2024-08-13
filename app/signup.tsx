@@ -54,9 +54,11 @@ export default function PhoneSignIn() {
         id: user.uid,
       });
       await user.updateProfile({
-        displayName: formik.values.name,
+        displayName: values.name,
       });
       dispatch(setUser(JSON.stringify(user)));
+
+      router.replace("/");
     }
   }
 

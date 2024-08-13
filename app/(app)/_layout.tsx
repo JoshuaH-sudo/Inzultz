@@ -1,5 +1,5 @@
 import { setUser } from "@/features/auth/authSlice";
-import { useAppDispatch } from "@/features/hooks";
+import { useAppDispatch, useAppSelector } from "@/features/hooks";
 import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import messaging from "@react-native-firebase/messaging";
 import firestore from "@react-native-firebase/firestore";
@@ -14,6 +14,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function AppLayout() {
   const dispatch = useAppDispatch();
+  const userData = useAppSelector((state) => state.auth.user);
   // Set an initializing state whilst Firebase connects
   const [initializing, setInitializing] = useState(true);
 

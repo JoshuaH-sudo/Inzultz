@@ -4,6 +4,7 @@ import { Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
+import auth from "@react-native-firebase/auth";
 
 import { PaperProvider } from "react-native-paper";
 import { PermissionsAndroid, Platform } from "react-native";
@@ -47,6 +48,8 @@ export default function RootLayout() {
   }
 
   useEffect(() => {
+    if (!auth().currentUser) return;
+    
     requestUserPermission();
   }, []);
 
