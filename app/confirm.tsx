@@ -29,6 +29,10 @@ export default function PhoneSignIn() {
   async function confirmCode() {
     try {
       const credentials = await confirm?.confirm(code!);
+      if (!credentials) {
+        console.log("Invalid code.");
+        return;
+      };
       router.back();
       router.setParams({
         user: JSON.stringify(credentials?.user),
@@ -54,9 +58,9 @@ export default function PhoneSignIn() {
             width: 200,
           }}
           value={code}
-          onChangeText={(text) => setCode(text)}
+          onChangeText={setCode}
         />
-        <Button onPress={() => confirmCode()}>Send Confirm Code</Button>
+        <Button onPress={confirmCode}>Send Confirm Code</Button>
       </View>
     </View>
   );
