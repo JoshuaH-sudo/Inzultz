@@ -3,14 +3,26 @@ import auth, { FirebaseAuthTypes } from "@react-native-firebase/auth";
 import { router } from "expo-router";
 import { setUser } from "@/features/auth/authSlice";
 import { useAppDispatch } from "@/features/hooks";
-import PhoneInput, { ICountry } from "react-native-international-phone-number";
-import { Button, TextInput } from "react-native-paper";
+import PhoneInput, {
+  getCountryByCca2,
+  ICountry,
+} from "react-native-international-phone-number";
+import { Button } from "react-native-paper";
 import { View } from "react-native";
+import { useLocales } from "expo-localization";
 
 export default function PhoneSignIn() {
   const dispatch = useAppDispatch();
+  const locals = useLocales();
   const [selectedCountry, setSelectedCountry] = useState<ICountry>();
   const [phoneNumber, setPhoneNumber] = useState<string>("");
+
+  useEffect(() => {
+    if (!locals[0].languageCode) return;
+
+    const country = getCountryByCca2(locals[0].languageCode);
+    setSelectedCountry(country);
+  }, []);
 
   // Handle login
   function onAuthStateChanged(user: FirebaseAuthTypes.User | null) {

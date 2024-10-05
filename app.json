@@ -45,10 +45,20 @@
             "useFrameworks": "static"
           }
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "aadcbfd6-a2cc-4776-8811-85d3b1d18c52"
+      }
+    },
+    "owner": "elqwerto_110100100"
   }
 }
