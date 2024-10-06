@@ -18,9 +18,9 @@ export default function PhoneSignIn() {
   const [phoneNumber, setPhoneNumber] = useState<string>("");
 
   useEffect(() => {
-    if (!locals[0].languageCode) return;
+    if (!locals[0].regionCode) return;
 
-    const country = getCountryByCca2(locals[0].languageCode);
+    const country = getCountryByCca2(locals[0].regionCode);
     setSelectedCountry(country);
   }, []);
 
